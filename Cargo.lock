@@ -143,7 +143,13 @@ dependencies = [
 name = "ats-provider-claude"
 version = "0.1.0"
 dependencies = [
+ "ats-core",
+ "ats-provider",
+ "dirs",
+ "serde",
  "serde_json",
+ "tempfile",
+ "thiserror",
 ]
 
 [[package]]

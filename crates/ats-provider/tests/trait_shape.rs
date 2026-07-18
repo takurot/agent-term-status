@@ -87,6 +87,19 @@ fn validation_result_reports_invalid_input() {
 }
 
 #[test]
+fn derive_session_uses_provider_session_id_with_fallback() {
+    let adapter = MockAdapter;
+
+    let session = adapter.derive_session(&json!({ "session_id": "s-99" }));
+    assert_eq!(session.id, "s-99");
+    assert!(session.parent_id.is_none());
+    assert!(session.terminal.is_none());
+
+    let fallback = adapter.derive_session(&json!({}));
+    assert_eq!(fallback.id, "unknown", "missing fields must not panic");
+}
+
+#[test]
 fn provider_error_variants_display_context() {
     let errors = [
         ProviderError::SchemaMismatch("unexpected shape".to_string()),

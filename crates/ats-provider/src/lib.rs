@@ -33,7 +33,11 @@ pub trait ProviderAdapter: Send + Sync {
     /// instead so the caller can fail open (SPEC §15).
     fn parse(&self, input: Value) -> Result<Vec<NormalizedEvent>, ProviderError>;
 
-    /// Cheap structural validation, run before [`ProviderAdapter::parse`].
+    /// Cheap structural validation.
+    ///
+    /// This is an optimization and reporting aid, not a gate:
+    /// [`ProviderAdapter::parse`] must itself stay robust against invalid
+    /// input (fail-open), even if callers skip validation.
     fn validate(&self, input: &Value) -> ValidationResult;
 
     /// Derives the session identity from a native payload, falling back to

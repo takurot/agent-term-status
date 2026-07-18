@@ -6,7 +6,11 @@ use crate::activity::Activity;
 use crate::session::SessionIdentity;
 
 /// Normalized event exchanged between providers, daemon, and renderers (SPEC §6.1).
+///
+/// Unknown fields are rejected at the type level (defense in depth for the
+/// privacy invariant, SPEC §6.1.2); `metadata` is the only extension point.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct NormalizedEvent {
     /// Schema version, e.g. `"1.0"`.
     pub schema_version: String,

@@ -54,12 +54,52 @@ fn normalized_event_deserializes_with_only_required_fields() {
     assert_eq!(event.event_type, EventType::SessionStarted);
     assert_eq!(event.session.id, "s-1");
     assert!(event.session.parent_id.is_none());
+    assert!(event.session.terminal.is_none());
     assert!(event.activity.is_none());
     assert!(event.metadata.is_empty());
 
     let back = serde_json::to_value(&event).expect("serialize");
+    assert!(
+        back["session"].get("terminal").is_none(),
+        "absent terminal must not be serialized as null-filled object: {back}"
+    );
     let reparsed: NormalizedEvent = serde_json::from_value(back).expect("roundtrip");
     assert_eq!(event, reparsed);
+}
+
+#[test]
+fn unknown_fields_are_rejected_at_type_level() {
+    let mut with_extra = spec_sample();
+    with_extra["prompt_body"] = json!("secret user prompt");
+    let result: Result<NormalizedEvent, _> = serde_json::from_value(with_extra);
+    assert!(
+        result.is_err(),
+        "unknown top-level fields must be rejected without schema validation"
+    );
+
+    let mut session_extra = spec_sample();
+    session_extra["session"]["env"] = json!({ "API_KEY": "leak" });
+    let result: Result<NormalizedEvent, _> = serde_json::from_value(session_extra);
+    assert!(result.is_err(), "unknown session fields must be rejected");
+
+    let mut activity_extra = spec_sample();
+    activity_extra["activity"]["command"] = json!("rm -rf /");
+    let result: Result<NormalizedEvent, _> = serde_json::from_value(activity_extra);
+    assert!(result.is_err(), "unknown activity fields must be rejected");
+
+    let mut terminal_extra = spec_sample();
+    terminal_extra["session"]["terminal"]["hostname"] = json!("leaky-host");
+    let result: Result<NormalizedEvent, _> = serde_json::from_value(terminal_extra);
+    assert!(result.is_err(), "unknown terminal fields must be rejected");
+}
+
+#[test]
+fn metadata_remains_the_extension_point() {
+    let mut with_metadata = spec_sample();
+    with_metadata["metadata"] = json!({ "custom": "value", "n": 1 });
+    let event: NormalizedEvent =
+        serde_json::from_value(with_metadata).expect("metadata accepts arbitrary keys");
+    assert_eq!(event.metadata.len(), 2);
 }
 
 #[test]
@@ -154,11 +194,11 @@ fn session_identity_and_terminal_context_roundtrip() {
         id: "s-42".to_string(),
         parent_id: Some("s-1".to_string()),
         workspace: Some("/tmp/ws".to_string()),
-        terminal: TerminalContext {
+        terminal: Some(TerminalContext {
             tty: Some("/dev/ttys004".to_string()),
             term_program: Some("iTerm.app".to_string()),
             tmux_pane: Some("%12".to_string()),
-        },
+        }),
     };
     let s = serde_json::to_value(&session).expect("serialize");
     let back: SessionIdentity = serde_json::from_value(s).expect("deserialize");

@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 /// Session identity for routing state to the right terminal target (SPEC §6.4).
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SessionIdentity {
     /// Provider-supplied session ID (required, SPEC §6.1.1).
     pub id: String,
@@ -12,12 +13,13 @@ pub struct SessionIdentity {
     #[serde(default)]
     pub workspace: Option<String>,
     /// Terminal context used for pane/tab targeting.
-    #[serde(default)]
-    pub terminal: TerminalContext,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub terminal: Option<TerminalContext>,
 }
 
 /// Terminal identification captured at event time (SPEC §6.1, §6.4).
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct TerminalContext {
     /// TTY device path, e.g. `/dev/ttys004`.
     #[serde(default)]

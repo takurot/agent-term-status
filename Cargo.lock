@@ -85,6 +85,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-trait"
+version = "0.1.89"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9035ad2d096bed7955a320ee7e2230574d28fd3c3a0f186cbea1ff3c7eed5dbb"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "ats-cli"
 version = "0.1.0"
 dependencies = [
@@ -113,6 +124,10 @@ version = "0.1.0"
 [[package]]
 name = "ats-provider"
 version = "0.1.0"
+dependencies = [
+ "ats-core",
+ "serde_json",
+]
 
 [[package]]
 name = "ats-provider-claude"
@@ -121,6 +136,11 @@ version = "0.1.0"
 [[package]]
 name = "ats-renderer"
 version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "ats-core",
+ "tokio",
+]
 
 [[package]]
 name = "ats-renderer-iterm2"
@@ -884,6 +904,27 @@ checksum = "c8323304221c2a851516f22236c5722a72eaa19749016521d6dff0824447d96d"
 dependencies = [
  "displaydoc",
  "zerovec",
+]
+
+[[package]]
+name = "tokio"
+version = "1.53.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d988bcd52dbe076d3d46903332f58c912b87a2c49b1428419a5845154762ffee"
+dependencies = [
+ "pin-project-lite",
+ "tokio-macros",
+]
+
+[[package]]
+name = "tokio-macros"
+version = "2.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6328af13490e73a9b4694030fafd93f8c8c6a9dede33e821c3fc63eddf8042ba"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

@@ -1,0 +1,7 @@
+{
+  "session_id": "3bf80928-f639-4b84-af01-e0b226ff7171",
+  "transcript_path": "/Users/testuser/.claude/projects/-Users-testuser-sandbox-project/3bf80928-f639-4b84-af01-e0b226ff7171.jsonl",
+  "cwd": "/Users/testuser/sandbox/project",
+  "hook_event_name": "Notification",
+  "message": "Claude needs your permission to use Bash"
+}

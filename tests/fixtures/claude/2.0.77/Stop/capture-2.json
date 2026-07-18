@@ -1,0 +1,8 @@
+{
+  "session_id": "b3aad9a1-e6eb-48f2-b0eb-025548b552df",
+  "transcript_path": "/Users/testuser/.claude/projects/-Users-testuser-sandbox-project/b3aad9a1-e6eb-48f2-b0eb-025548b552df.jsonl",
+  "cwd": "/Users/testuser/sandbox/project",
+  "permission_mode": "default",
+  "hook_event_name": "Stop",
+  "stop_hook_active": false
+}

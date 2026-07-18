@@ -1,0 +1,17 @@
+{
+  "session_id": "23893e15-90c0-4c9b-8011-b199f2a26fa2",
+  "transcript_path": "/Users/testuser/.claude/projects/-Users-testuser-sandbox-project/23893e15-90c0-4c9b-8011-b199f2a26fa2.jsonl",
+  "cwd": "/Users/testuser/sandbox/project",
+  "prompt_id": "ae756d27-b3de-46c1-a870-44001750c49d",
+  "permission_mode": "default",
+  "hook_event_name": "PostToolUseFailure",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "false",
+    "description": "Run false command to produce exit code 1"
+  },
+  "tool_use_id": "toolu_014Pjm4UPrtobMGfhZfgEM9A",
+  "error": "Exit code 1",
+  "is_interrupt": false,
+  "duration_ms": 400
+}

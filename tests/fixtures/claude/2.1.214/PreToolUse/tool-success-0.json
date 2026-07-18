@@ -1,0 +1,14 @@
+{
+  "session_id": "3586deba-fe54-4db7-ae2a-2a0f040b3dd2",
+  "transcript_path": "/Users/testuser/.claude/projects/-Users-testuser-sandbox-project/3586deba-fe54-4db7-ae2a-2a0f040b3dd2.jsonl",
+  "cwd": "/Users/testuser/sandbox/project",
+  "prompt_id": "0fb795b8-0413-43bb-a2a4-7def525aac03",
+  "permission_mode": "default",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "echo fixture-test",
+    "description": "Echo fixture-test to verify Bash tool works"
+  },
+  "tool_use_id": "toolu_01HUykiDbABs4h8qYa94FQ1f"
+}

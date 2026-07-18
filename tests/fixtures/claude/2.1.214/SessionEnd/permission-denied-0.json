@@ -1,0 +1,8 @@
+{
+  "session_id": "eea20676-2983-43d3-b139-25298a66849f",
+  "transcript_path": "/Users/testuser/.claude/projects/-Users-testuser-sandbox-project/eea20676-2983-43d3-b139-25298a66849f.jsonl",
+  "cwd": "/Users/testuser/sandbox/project",
+  "prompt_id": "3dbfc865-c032-4e0f-95e4-847c396277a5",
+  "hook_event_name": "SessionEnd",
+  "reason": "other"
+}

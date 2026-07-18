@@ -1,0 +1,12 @@
+{
+  "session_id": "0e0a3447-c9b1-48aa-b925-4761e0ff72cf",
+  "transcript_path": "/Users/testuser/.claude/projects/-Users-testuser-sandbox-project/a3dc0350-8f1f-4d5e-a102-38758bc557f4.jsonl",
+  "cwd": "/Users/testuser/sandbox/project",
+  "hook_event_name": "Notification",
+  "message": "Claude is waiting for your input",
+  "future_field_v99": {
+    "nested": true,
+    "note": "forward-compat probe"
+  },
+  "another_unknown": 42
+}

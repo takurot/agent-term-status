@@ -1,0 +1,13 @@
+{
+  "session_id": "8791fdcd-e1a4-478b-87b5-1ee8bbab653e",
+  "transcript_path": "/Users/testuser/.claude/projects/-Users-testuser-sandbox-project/8791fdcd-e1a4-478b-87b5-1ee8bbab653e.jsonl",
+  "cwd": "/Users/testuser/sandbox/project",
+  "permission_mode": "default",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "false",
+    "description": "Run false command to exit with code 1"
+  },
+  "tool_use_id": "toolu_01AP7XTsUrzH67R541piaN6W"
+}

@@ -1,0 +1,12 @@
+{
+  "session_id": "eea20676-2983-43d3-b139-25298a66849f",
+  "transcript_path": "/Users/testuser/.claude/projects/-Users-testuser-sandbox-project/eea20676-2983-43d3-b139-25298a66849f.jsonl",
+  "cwd": "/Users/testuser/sandbox/project",
+  "prompt_id": "3dbfc865-c032-4e0f-95e4-847c396277a5",
+  "permission_mode": "default",
+  "hook_event_name": "Stop",
+  "stop_hook_active": false,
+  "last_assistant_message": "The command was blocked by a security restriction in your Claude Code configuration. The error indicates that file creation/modification may be restricted by a hook in your settings.\n\nThis appears to be a deliberate security measure. If you need to allow this operation, you may need to check your `.claude/settings.json` or hook configuration.",
+  "background_tasks": [],
+  "session_crons": []
+}

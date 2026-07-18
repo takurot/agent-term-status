@@ -1,0 +1,13 @@
+{
+  "session_id": "b3aad9a1-e6eb-48f2-b0eb-025548b552df",
+  "transcript_path": "/Users/testuser/.claude/projects/-Users-testuser-sandbox-project/b3aad9a1-e6eb-48f2-b0eb-025548b552df.jsonl",
+  "cwd": "/Users/testuser/sandbox/project",
+  "permission_mode": "default",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "echo fixture-test",
+    "description": "Echo fixture-test"
+  },
+  "tool_use_id": "toolu_014x2echJJNTYpJDyjQZ3BKA"
+}

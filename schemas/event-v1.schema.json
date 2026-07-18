@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/takurot/agent-term-status/schemas/event-v1.schema.json",
+  "title": "agent-term-status Normalized Event v1",
+  "description": "Normalized Event exchanged between providers, daemon, and renderers (SPEC section 6.1). Strict: unknown fields are rejected; metadata is the only extension point and must never carry prompt bodies or secrets.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "timestamp",
+    "provider",
+    "event_type",
+    "session"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^1\\.[0-9]+$"
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "provider": {
+      "type": "string",
+      "minLength": 1
+    },
+    "provider_version": {
+      "type": ["string", "null"]
+    },
+    "event_type": {
+      "enum": [
+        "session.started",
+        "session.stopped",
+        "session.failed",
+        "session.heartbeat",
+        "agent.started",
+        "agent.working",
+        "agent.waiting",
+        "agent.completed",
+        "agent.failed",
+        "tool.started",
+        "tool.completed",
+        "tool.failed",
+        "user.input_required",
+        "user.approval_required",
+        "user.input_received",
+        "provider.disconnected",
+        "provider.schema_error",
+        "renderer.failed",
+        "session.timeout"
+      ]
+    },
+    "session": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent_id": {
+          "type": ["string", "null"]
+        },
+        "workspace": {
+          "type": ["string", "null"]
+        },
+        "terminal": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tty": {
+              "type": ["string", "null"]
+            },
+            "term_program": {
+              "type": ["string", "null"]
+            },
+            "tmux_pane": {
+              "type": ["string", "null"]
+            }
+          }
+        }
+      }
+    },
+    "activity": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "enum": [
+            "thinking",
+            "reading",
+            "searching",
+            "editing",
+            "shell",
+            "testing",
+            "network",
+            "version_control",
+            "deployment",
+            "unknown"
+          ]
+        },
+        "label": {
+          "type": ["string", "null"],
+          "maxLength": 40
+        },
+        "tool_name": {
+          "type": ["string", "null"]
+        },
+        "risk": {
+          "anyOf": [
+            {
+              "enum": ["low", "medium", "high", "critical", "unknown"]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "metadata": {
+      "type": "object"
+    }
+  }
+}

@@ -11,21 +11,33 @@ fn tmux_available() -> bool {
 struct TmuxSession(String);
 
 impl TmuxSession {
-    fn new(name: &str) -> Self {
+    fn new(prefix: &str) -> Self {
+        let name = format!("{prefix}-{}", std::process::id());
         let _ = Command::new("tmux")
-            .args(["kill-session", "-t", name])
+            .args(["kill-session", "-t", &name])
             .output();
         let ok = Command::new("tmux")
-            .args(["new-session", "-d", "-s", name, "-x", "80", "-y", "24"])
+            .args(["new-session", "-d", "-s", &name, "-x", "80", "-y", "24"])
             .output()
             .expect("spawn tmux")
             .status
             .success();
         assert!(ok, "failed to create detached tmux session");
-        Self(name.to_string())
+        Self(name)
     }
 
-    fn pane_id(&self) -> String {
+    fn split(&self) -> String {
+        let ok = Command::new("tmux")
+            .args(["split-window", "-h", "-t", &self.0])
+            .output()
+            .expect("split window")
+            .status
+            .success();
+        assert!(ok, "failed to split tmux window");
+        self.pane_ids().pop().expect("sibling pane")
+    }
+
+    fn pane_ids(&self) -> Vec<String> {
         let out = Command::new("tmux")
             .args(["list-panes", "-t", &self.0, "-F", "#{pane_id}"])
             .output()
@@ -33,9 +45,12 @@ impl TmuxSession {
         String::from_utf8(out.stdout)
             .expect("utf8")
             .lines()
-            .next()
-            .expect("one pane")
-            .to_string()
+            .map(str::to_string)
+            .collect()
+    }
+
+    fn pane_id(&self) -> String {
+        self.pane_ids().into_iter().next().expect("one pane")
     }
 
     fn pane_border_style(&self, pane: &str) -> String {
@@ -59,10 +74,11 @@ impl Drop for TmuxSession {
 }
 
 fn run_event(state: &str, pane: &str) -> std::process::Output {
+    // TMUX is deliberately NOT overridden: production inherits the ambient
+    // socket env, and so must the test to talk to the same tmux server.
     Command::new(env!("CARGO_BIN_EXE_ats"))
         .args(["event", state])
         .env("TMUX_PANE", pane)
-        .env_remove("TMUX")
         .output()
         .expect("run ats event")
 }
@@ -70,11 +86,13 @@ fn run_event(state: &str, pane: &str) -> std::process::Output {
 #[test]
 fn event_working_sets_pane_border_blue_on_target_pane_only() {
     if !tmux_available() {
-        eprintln!("skipping: tmux not available");
+        println!("skipping: tmux not available");
         return;
     }
     let session = TmuxSession::new("ats-e2e-event");
     let pane = session.pane_id();
+    let sibling = session.split();
+    assert_ne!(pane, sibling);
 
     let out = run_event("working", &pane);
     assert!(
@@ -86,6 +104,11 @@ fn event_working_sets_pane_border_blue_on_target_pane_only() {
         session.pane_border_style(&pane),
         "pane-border-style fg=blue"
     );
+    assert_eq!(
+        session.pane_border_style(&sibling),
+        "",
+        "sibling pane must never be touched (SPEC §21 #5)"
+    );
 
     let out = run_event("attention", &pane);
     assert!(out.status.success());
@@ -93,6 +116,7 @@ fn event_working_sets_pane_border_blue_on_target_pane_only() {
         session.pane_border_style(&pane),
         "pane-border-style fg=orange"
     );
+    assert_eq!(session.pane_border_style(&sibling), "");
 
     let out = run_event("idle", &pane);
     assert!(out.status.success());

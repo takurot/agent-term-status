@@ -43,6 +43,7 @@ ID (`-p -t %N`): `pane-border-style`, `pane-border-format`. Reset uses
 ## Fallback
 
 If a tmux version regresses pane-scoped option isolation, fall back to
-`select-pane -t %N -P 'fg=...'` (older pane-colouring path) and gate the
-renderer on `tmux -V` detection in `Renderer::detect()`. The E2E leak test
-(I-24) guards this permanently.
+`select-pane -t %N -P 'bg=...'` (pane background tint — a different visual
+than the border, but still pane-scoped) and gate the renderer on `tmux -V`
+detection in `Renderer::detect()`. The E2E leak test (I-24) guards this
+permanently.

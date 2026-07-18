@@ -1,0 +1,2 @@
+# Clippy configuration. Lint levels are enforced via `-D warnings` in CI.
+avoid-breaking-exported-api = false

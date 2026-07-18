@@ -6,3 +6,8 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+ats-core = { path = "../ats-core" }
+async-trait = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "macros"] }

@@ -6,3 +6,5 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+ats-core = { path = "../ats-core" }
+serde_json = { workspace = true }

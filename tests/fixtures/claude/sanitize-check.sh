@@ -17,7 +17,7 @@ while IFS= read -r -d '' file; do
         echo "LEAK (temp path) in $file"
         status=1
     fi
-    if grep -qE '"~|~/' "$file"; then
+    if grep -qE '"~/|~/' "$file"; then
         echo "LEAK (home shorthand) in $file"
         status=1
     fi

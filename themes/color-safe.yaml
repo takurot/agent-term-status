@@ -1,0 +1,37 @@
+name: color-safe
+states:
+  idle:
+    color: null
+    label: "Idle"
+    symbol: "○"
+    notification: false
+  working:
+    color: "#0072B2"
+    label: "Working"
+    symbol: "●"
+    notification: false
+  attention:
+    color: "#E69F00"
+    label: "Needs input"
+    symbol: "!"
+    notification: true
+  risk:
+    color: "#D55E00"
+    label: "Risk"
+    symbol: "‼"
+    notification: true
+  result:
+    color: "#009E73"
+    label: "Completed"
+    symbol: "+"
+    notification: false
+  error:
+    color: "#CC79A7"
+    label: "Error"
+    symbol: "×"
+    notification: true
+  unknown:
+    color: "#999999"
+    label: "Unknown"
+    symbol: "?"
+    notification: false

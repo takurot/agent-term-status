@@ -1,0 +1,37 @@
+name: monochrome-symbols
+states:
+  idle:
+    color: null
+    label: "Idle"
+    symbol: "○"
+    notification: false
+  working:
+    color: null
+    label: "Working"
+    symbol: "●"
+    notification: false
+  attention:
+    color: null
+    label: "!"
+    symbol: "!"
+    notification: false
+  risk:
+    color: null
+    label: "!!"
+    symbol: "‼"
+    notification: false
+  result:
+    color: null
+    label: "Done"
+    symbol: "+"
+    notification: false
+  error:
+    color: null
+    label: "×"
+    symbol: "×"
+    notification: false
+  unknown:
+    color: null
+    label: "?"
+    symbol: "?"
+    notification: false

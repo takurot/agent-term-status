@@ -1,0 +1,37 @@
+name: high-contrast
+states:
+  idle:
+    color: "#808080"
+    label: "IDLE"
+    symbol: "○"
+    notification: false
+  working:
+    color: "#00BFFF"
+    label: "WORKING"
+    symbol: "◉"
+    notification: true
+  attention:
+    color: "#FFA500"
+    label: "NEEDS INPUT"
+    symbol: "⚠"
+    notification: true
+  risk:
+    color: "#FF0000"
+    label: "RISK"
+    symbol: "⛔"
+    notification: true
+  result:
+    color: "#00FF00"
+    label: "DONE"
+    symbol: "✔"
+    notification: true
+  error:
+    color: "#FF00FF"
+    label: "ERROR"
+    symbol: "✖"
+    notification: true
+  unknown:
+    color: "#C0C0C0"
+    label: "UNKNOWN"
+    symbol: "?"
+    notification: false

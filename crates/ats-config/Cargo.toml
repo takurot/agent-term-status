@@ -6,3 +6,9 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+ats-core = { path = "../ats-core" }
+serde = { workspace = true }
+serde_yaml = { workspace = true }
+dirs = { workspace = true }
+tempfile = { workspace = true }
+thiserror = { workspace = true }

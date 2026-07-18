@@ -1,0 +1,37 @@
+name: low-distraction
+states:
+  idle:
+    color: "#3A3A3A"
+    label: ""
+    symbol: "○"
+    notification: false
+  working:
+    color: "#4A5568"
+    label: ""
+    symbol: "●"
+    notification: false
+  attention:
+    color: "#718096"
+    label: ""
+    symbol: "!"
+    notification: false
+  risk:
+    color: "#C53030"
+    label: "Risk"
+    symbol: "!!"
+    notification: true
+  result:
+    color: "#2D6A4F"
+    label: ""
+    symbol: "✓"
+    notification: false
+  error:
+    color: "#805AD5"
+    label: ""
+    symbol: "×"
+    notification: false
+  unknown:
+    color: "#3A3A3A"
+    label: ""
+    symbol: "?"
+    notification: false

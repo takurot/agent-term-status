@@ -12,3 +12,5 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { workspace = true }
+ats-core = { path = "../ats-core" }
+serde_json = { workspace = true }

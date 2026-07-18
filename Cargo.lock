@@ -99,7 +99,9 @@ dependencies = [
 name = "ats-cli"
 version = "0.1.0"
 dependencies = [
+ "ats-core",
  "clap",
+ "serde_json",
 ]
 
 [[package]]

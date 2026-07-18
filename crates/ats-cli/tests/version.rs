@@ -21,8 +21,16 @@ fn version_flag_prints_name_and_crate_version() {
 #[cfg(unix)]
 #[test]
 fn version_works_when_invoked_as_agent_term_status_symlink() {
+    struct Cleanup(std::path::PathBuf);
+    impl Drop for Cleanup {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
     let dir = std::env::temp_dir().join(format!("ats-symlink-test-{}", std::process::id()));
     std::fs::create_dir_all(&dir).expect("create temp dir");
+    let _cleanup = Cleanup(dir.clone());
     let link = dir.join("agent-term-status");
     let _ = std::fs::remove_file(&link);
     std::os::unix::fs::symlink(env!("CARGO_BIN_EXE_ats"), &link).expect("create symlink");
@@ -32,11 +40,12 @@ fn version_works_when_invoked_as_agent_term_status_symlink() {
         .output()
         .expect("failed to run agent-term-status symlink");
 
-    let _ = std::fs::remove_file(&link);
-    let _ = std::fs::remove_dir(&dir);
-
     assert!(out.status.success());
     let stdout = String::from_utf8(out.stdout).expect("stdout is not utf-8");
+    assert!(
+        stdout.starts_with("agent-term-status "),
+        "version output should reflect the invoked binary name: {stdout:?}"
+    );
     assert!(
         stdout.contains(env!("CARGO_PKG_VERSION")),
         "version output should contain crate version: {stdout:?}"

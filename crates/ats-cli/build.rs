@@ -1,7 +1,6 @@
 use std::process::Command;
 
 fn main() {
-    println!("cargo:rerun-if-changed=build.rs");
     let git_describe = Command::new("git")
         .args(["describe", "--tags", "--always", "--dirty"])
         .output()

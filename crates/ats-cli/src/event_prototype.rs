@@ -32,6 +32,36 @@ fn border_style(state: AgentState) -> Option<&'static str> {
     }
 }
 
+/// Minimum tmux version whose `set-option -p` is truly pane-scoped.
+///
+/// Measured in the I-05 spike (docs/spikes/tmux-pane-safety.md): on tmux
+/// 3.4, 3.5a and 3.6, `set-option -p -t %N pane-border-style` silently
+/// applies at *window* scope and leaks to every pane in the window,
+/// violating SPEC §21 #5. Only 3.7+ isolates the target pane.
+const MIN_TMUX_VERSION: (u32, u32) = (3, 7);
+
+/// Parses `tmux -V` output like `tmux 3.4`, `tmux 3.7b`, `tmux next-3.8`.
+fn parse_tmux_version(raw: &str) -> Option<(u32, u32)> {
+    let start = raw.find(|c: char| c.is_ascii_digit())?;
+    let tail = &raw[start..];
+    let end = tail
+        .find(|c: char| !c.is_ascii_digit() && c != '.')
+        .unwrap_or(tail.len());
+    let mut parts = tail[..end].split('.');
+    let major = parts.next()?.parse().ok()?;
+    let minor = parts.next().unwrap_or("0").parse().ok()?;
+    Some((major, minor))
+}
+
+fn pane_scope_is_safe() -> Option<bool> {
+    let out = Command::new("tmux").arg("-V").output().ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    let raw = String::from_utf8(out.stdout).ok()?;
+    Some(parse_tmux_version(&raw)? >= MIN_TMUX_VERSION)
+}
+
 /// Runs the demo. Never returns a failure exit code (fail-open).
 pub fn run(state_arg: &str) {
     let Some(state) = parse_state(state_arg) else {
@@ -45,6 +75,22 @@ pub fn run(state_arg: &str) {
         eprintln!("ats event (prototype): TMUX_PANE not set, nothing to render");
         return;
     };
+
+    match pane_scope_is_safe() {
+        Some(true) => {}
+        Some(false) => {
+            eprintln!(
+                "ats event (prototype): tmux < {}.{} leaks pane options to the \
+                 whole window; refusing to render",
+                MIN_TMUX_VERSION.0, MIN_TMUX_VERSION.1
+            );
+            return;
+        }
+        None => {
+            eprintln!("ats event (prototype): cannot determine tmux version");
+            return;
+        }
+    }
 
     let result = match border_style(state) {
         Some(style) => Command::new("tmux")
@@ -95,5 +141,35 @@ mod tests {
         assert_eq!(border_style(AgentState::Error), Some("fg=magenta"));
         assert_eq!(border_style(AgentState::Unknown), Some("fg=colour244"));
         assert_eq!(border_style(AgentState::Idle), None, "idle resets");
+    }
+
+    #[test]
+    fn parses_tmux_version_strings() {
+        assert_eq!(parse_tmux_version("tmux 3.4"), Some((3, 4)));
+        assert_eq!(parse_tmux_version("tmux 3.5a"), Some((3, 5)));
+        assert_eq!(parse_tmux_version("tmux 3.7b"), Some((3, 7)));
+        assert_eq!(parse_tmux_version("tmux next-3.8"), Some((3, 8)));
+        assert_eq!(parse_tmux_version("tmux master"), None);
+        assert_eq!(parse_tmux_version(""), None);
+    }
+
+    #[test]
+    fn pane_scope_boundary_is_3_7() {
+        for (raw, safe) in [
+            ("tmux 3.4", false),
+            ("tmux 3.5a", false),
+            ("tmux 3.6", false),
+            ("tmux 3.7", true),
+            ("tmux 3.7b", true),
+            ("tmux next-3.8", true),
+            ("tmux 4.0", true),
+        ] {
+            let version = parse_tmux_version(raw).expect(raw);
+            assert_eq!(
+                version >= MIN_TMUX_VERSION,
+                safe,
+                "boundary check for {raw}"
+            );
+        }
     }
 }

@@ -8,6 +8,29 @@ fn tmux_available() -> bool {
         .unwrap_or(false)
 }
 
+/// Pane-scoped options require tmux >= 3.7 (see docs/spikes/tmux-pane-safety.md);
+/// older versions leak the option to window scope and the prototype refuses.
+fn tmux_supports_pane_scope() -> bool {
+    let Ok(out) = Command::new("tmux").arg("-V").output() else {
+        return false;
+    };
+    if !out.status.success() {
+        return false;
+    }
+    let raw = String::from_utf8_lossy(&out.stdout);
+    let Some(start) = raw.find(|c: char| c.is_ascii_digit()) else {
+        return false;
+    };
+    let tail = &raw[start..];
+    let end = tail
+        .find(|c: char| !c.is_ascii_digit() && c != '.')
+        .unwrap_or(tail.len());
+    let mut parts = tail[..end].split('.');
+    let major: u32 = parts.next().and_then(|p| p.parse().ok()).unwrap_or(0);
+    let minor: u32 = parts.next().and_then(|p| p.parse().ok()).unwrap_or(0);
+    (major, minor) >= (3, 7)
+}
+
 struct TmuxSession(String);
 
 impl TmuxSession {
@@ -87,6 +110,10 @@ fn run_event(state: &str, pane: &str) -> std::process::Output {
 fn event_working_sets_pane_border_blue_on_target_pane_only() {
     if !tmux_available() {
         println!("skipping: tmux not available");
+        return;
+    }
+    if !tmux_supports_pane_scope() {
+        println!("skipping: tmux < 3.7 leaks pane options to window scope");
         return;
     }
     let session = TmuxSession::new("ats-e2e-event");

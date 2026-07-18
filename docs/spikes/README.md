@@ -7,7 +7,7 @@ documented fallback.
 | # | Topic | Decision (short) | Unblocks |
 |---|-------|------------------|----------|
 | 1 | [tmux-invocation.md](tmux-invocation.md) | per-call `tmux` subprocess (p95 ≈ 7 ms ≪ 150 ms budget) | I-09 |
-| 2 | [tmux-pane-safety.md](tmux-pane-safety.md) | pane-scoped `set-option -p -t %N` proven leak-free; `-u` resets | I-09 |
+| 2 | [tmux-pane-safety.md](tmux-pane-safety.md) | pane-scoped `set-option -p` leak-free only on tmux ≥ 3.7 (3.4–3.6 leak to window scope — measured); version-gate the capability | I-09 |
 | 3 | [iterm2-osc.md](iterm2-osc.md) | OSC 0/2 + 1337 badge outside tmux; passthrough off by default → capability-detect | I-10, I-12 |
 | 4 | [macos-notifications.md](macos-notifications.md) | app-bundle helper (`ats-notifier.app`) with UNUserNotificationCenter; OSC 9 fallback | I-11 |
 | 5 | [osc-tty-ownership.md](osc-tty-ownership.md) | daemon writes to `/dev/ttysNNN` with `O_NOCTTY` (proven); CLI-proxy fallback | I-10, I-12 |

@@ -1,0 +1,8 @@
+{
+  "session_id": "f67a5a6b-dd28-4eeb-8621-779ba6c9f4d9",
+  "transcript_path": "/Users/testuser/.claude/projects/-Users-testuser-sandbox-project/f67a5a6b-dd28-4eeb-8621-779ba6c9f4d9.jsonl",
+  "cwd": "/Users/testuser/sandbox/project",
+  "permission_mode": "default",
+  "hook_event_name": "UserPromptSubmit",
+  "prompt": "Reply with exactly: ok"
+}

@@ -1,0 +1,7 @@
+{
+  "session_id": "3586deba-fe54-4db7-ae2a-2a0f040b3dd2",
+  "transcript_path": "/Users/testuser/.claude/projects/-Users-testuser-sandbox-project/3586deba-fe54-4db7-ae2a-2a0f040b3dd2.jsonl",
+  "cwd": "/Users/testuser/sandbox/project",
+  "hook_event_name": "SessionStart",
+  "source": "startup"
+}

@@ -1,0 +1,9 @@
+{
+  "session_id": "23893e15-90c0-4c9b-8011-b199f2a26fa2",
+  "transcript_path": "/Users/testuser/.claude/projects/-Users-testuser-sandbox-project/23893e15-90c0-4c9b-8011-b199f2a26fa2.jsonl",
+  "cwd": "/Users/testuser/sandbox/project",
+  "prompt_id": "ae756d27-b3de-46c1-a870-44001750c49d",
+  "permission_mode": "default",
+  "hook_event_name": "UserPromptSubmit",
+  "prompt": "Run the bash command 'false' using the Bash tool. It will exit with code 1 - that is expected. After it fails, reply done and do not retry."
+}

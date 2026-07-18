@@ -1,0 +1,12 @@
+{
+  "transcript_path": "/Users/testuser/.claude/projects/-Users-testuser-sandbox-project/eea20676-2983-43d3-b139-25298a66849f.jsonl",
+  "prompt_id": "3dbfc865-c032-4e0f-95e4-847c396277a5",
+  "permission_mode": "default",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "touch blocked.txt",
+    "description": "Create a file named blocked.txt"
+  },
+  "tool_use_id": "toolu_01EPsmFCKQ5Sv8op1nsAkrxy"
+}

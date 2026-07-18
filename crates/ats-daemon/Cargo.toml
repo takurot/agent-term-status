@@ -1,0 +1,12 @@
+[package]
+name = "ats-daemon"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "ats-daemon"
+path = "src/main.rs"
+
+[dependencies]

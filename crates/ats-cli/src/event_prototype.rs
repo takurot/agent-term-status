@@ -3,6 +3,8 @@
 //! `ats event <state>` maps an agent state to a tmux pane border color on
 //! the pane identified by `$TMUX_PANE`, with no daemon involved. This
 //! validates the tmux invocation strategy and pane-targeting safety
+//! and serves as the standalone fallback renderer.
+#![allow(dead_code)]
 //! decisions (see `docs/spikes/`). It will be replaced by the real event
 //! pipeline in I-17; do not extend it.
 //!

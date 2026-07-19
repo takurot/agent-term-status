@@ -164,6 +164,14 @@ dependencies = [
 [[package]]
 name = "ats-renderer-iterm2"
 version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "ats-config",
+ "ats-core",
+ "ats-renderer",
+ "libc",
+ "tokio",
+]
 
 [[package]]
 name = "ats-renderer-notification"

@@ -14,6 +14,8 @@ pub struct DaemonPaths {
     pub socket_path: PathBuf,
     /// PID file path.
     pub pid_path: PathBuf,
+    /// Log directory path.
+    pub logs_dir: PathBuf,
     /// Whether the parent directory belongs to agent-term-status (the
     /// state-dir fallback) as opposed to a system-managed directory
     /// (`$XDG_RUNTIME_DIR`).
@@ -32,24 +34,27 @@ impl DaemonPaths {
     /// Resolves paths from explicit environment values (testable without
     /// mutating process env; see CLAUDE.md §11).
     pub fn resolve_with_env(runtime_dir: Option<&str>, home: Option<&Path>) -> Self {
+        let home = home.unwrap_or_else(|| Path::new("."));
         match runtime_dir.filter(|s| !s.is_empty()) {
             Some(dir) => {
                 let base = PathBuf::from(dir);
                 Self {
                     socket_path: base.join("agent-term-status.sock"),
                     pid_path: base.join("agent-term-status.pid"),
+                    logs_dir: home
+                        .join(".local")
+                        .join("state")
+                        .join("agent-term-status")
+                        .join("logs"),
                     owns_parent_dir: false,
                 }
             }
             None => {
-                let base = home
-                    .unwrap_or_else(|| Path::new("."))
-                    .join(".local")
-                    .join("state")
-                    .join("agent-term-status");
+                let base = home.join(".local").join("state").join("agent-term-status");
                 Self {
                     socket_path: base.join("status.sock"),
                     pid_path: base.join("status.pid"),
+                    logs_dir: base.join("logs"),
                     owns_parent_dir: true,
                 }
             }

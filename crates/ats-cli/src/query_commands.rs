@@ -1,3 +1,7 @@
+use std::collections::VecDeque;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
+
 use crate::socket_client;
 
 fn logs_dir() -> std::path::PathBuf {
@@ -56,33 +60,50 @@ pub fn run_logs(tail: bool, level: Option<&str>) {
         return;
     }
 
-    match std::fs::read_to_string(&log_file) {
-        Ok(content) => {
-            let lines: Vec<&str> = content.lines().collect();
-            let filtered: Vec<&&str> = if let Some(lvl) = level {
-                let needle = format!("\"level\":\"{lvl}\"");
-                lines.iter().filter(|l| l.contains(&needle)).collect()
-            } else {
-                lines.iter().collect()
-            };
+    let file = match File::open(&log_file) {
+        Ok(f) => f,
+        Err(e) => {
+            eprintln!("Failed to open log file: {e}");
+            return;
+        }
+    };
 
-            if tail {
-                let start = if filtered.len() > 20 {
-                    filtered.len() - 20
+    let reader = BufReader::new(file);
+    let needle = level.map(|lvl| format!("\"level\":\"{lvl}\""));
+
+    if tail {
+        let mut ring: VecDeque<String> = VecDeque::with_capacity(1000);
+        for line_result in reader.lines() {
+            if let Ok(line) = line_result {
+                if let Some(ref n) = needle {
+                    if line.contains(n.as_str()) {
+                        if ring.len() == 1000 {
+                            ring.pop_front();
+                        }
+                        ring.push_back(line);
+                    }
                 } else {
-                    0
-                };
-                for line in &filtered[start..] {
-                    println!("{line}");
-                }
-            } else {
-                for line in &filtered {
-                    println!("{line}");
+                    if ring.len() == 1000 {
+                        ring.pop_front();
+                    }
+                    ring.push_back(line);
                 }
             }
         }
-        Err(e) => {
-            eprintln!("Failed to read log file: {e}");
+        for line in &ring {
+            println!("{line}");
+        }
+    } else {
+        for line_result in reader.lines() {
+            if let Ok(line) = line_result {
+                if let Some(ref n) = needle {
+                    if line.contains(n.as_str()) {
+                        println!("{line}");
+                    }
+                } else {
+                    println!("{line}");
+                }
+            }
         }
     }
 }

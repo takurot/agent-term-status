@@ -75,6 +75,25 @@ where
     Ok(())
 }
 
+/// Synchronous variant of [`write_frame`] for use in non-async contexts
+/// such as the CLI hook-path client.
+pub fn write_frame_sync<W>(writer: &mut W, payload: &[u8]) -> Result<(), FrameError>
+where
+    W: std::io::Write,
+{
+    if payload.len() > MAX_FRAME_BYTES as usize {
+        return Err(FrameError::Oversized {
+            declared: u32::try_from(payload.len()).unwrap_or(u32::MAX),
+        });
+    }
+    let len = payload.len() as u32;
+
+    writer.write_all(&len.to_be_bytes())?;
+    writer.write_all(payload)?;
+    writer.flush()?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

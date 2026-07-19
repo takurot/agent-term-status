@@ -15,7 +15,7 @@ pub mod pidfile;
 pub mod server;
 
 pub use broker::{Broker, BrokerConfig, BrokerError};
-pub use framing::{read_frame, write_frame, FrameError, MAX_FRAME_BYTES};
+pub use framing::{read_frame, write_frame, write_frame_sync, FrameError, MAX_FRAME_BYTES};
 pub use paths::DaemonPaths;
 pub use pidfile::{PidFile, PidFileError};
 pub use server::{ServerConfig, SocketServer};

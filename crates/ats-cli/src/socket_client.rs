@@ -1,7 +1,7 @@
-use std::io::Write;
 use std::os::unix::net::UnixStream;
 use std::path::PathBuf;
 
+use ats_daemon::framing::write_frame_sync;
 use ats_daemon::DaemonPaths;
 
 pub fn daemon_socket_path() -> PathBuf {
@@ -18,16 +18,8 @@ pub fn send_frame_to_daemon(payload: &[u8]) -> Result<(), String> {
         )
     })?;
 
-    let len = payload.len() as u32;
-    stream
-        .write_all(&len.to_be_bytes())
-        .map_err(|e| format!("failed to write frame header: {e}"))?;
-    stream
-        .write_all(payload)
-        .map_err(|e| format!("failed to write frame payload: {e}"))?;
-    stream
-        .flush()
-        .map_err(|e| format!("failed to flush: {e}"))?;
+    write_frame_sync(&mut stream, payload)
+        .map_err(|e| format!("failed to write frame: {e}"))?;
 
     Ok(())
 }

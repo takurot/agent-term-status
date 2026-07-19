@@ -9,7 +9,11 @@ use crate::socket_client;
 
 pub fn run_ingest(provider: &str) {
     let mut input = String::new();
-    if std::io::stdin().read_to_string(&mut input).is_err() {
+    if std::io::stdin()
+        .take(65536)
+        .read_to_string(&mut input)
+        .is_err()
+    {
         return;
     }
 
@@ -70,7 +74,7 @@ pub fn run_reset(all: bool, session_id: Option<&str>) {
         timestamp: now_utc(),
         provider: "cli".to_string(),
         provider_version: None,
-        event_type: EventType::SessionStopped,
+        event_type: EventType::SessionTimeout,
         session: SessionIdentity {
             id: target.clone(),
             parent_id: None,

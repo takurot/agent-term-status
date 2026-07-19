@@ -18,8 +18,7 @@ pub fn send_frame_to_daemon(payload: &[u8]) -> Result<(), String> {
         )
     })?;
 
-    write_frame_sync(&mut stream, payload)
-        .map_err(|e| format!("failed to write frame: {e}"))?;
+    write_frame_sync(&mut stream, payload).map_err(|e| format!("failed to write frame: {e}"))?;
 
     Ok(())
 }

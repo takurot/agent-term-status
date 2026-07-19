@@ -1,5 +1,6 @@
 use clap::{Arg, Command};
 
+mod daemon_commands;
 mod doctor;
 mod event_prototype;
 mod query_commands;
@@ -28,6 +29,17 @@ fn cli(name: String) -> Command {
                 .arg(Arg::new("state").required(true).value_name("STATE").help(
                     "Agent state in lowercase: idle|working|attention|risk|result|error|unknown",
                 )),
+        )
+        .subcommand(
+            Command::new("daemon")
+                .about("Manage the ats-daemon service")
+                .arg_required_else_help(true)
+                .subcommand(
+                    Command::new("enable")
+                        .about("Install launchd plist to auto-start daemon on login"),
+                )
+                .subcommand(Command::new("disable").about("Unload and remove launchd plist"))
+                .subcommand(Command::new("status").about("Show daemon status")),
         )
         .subcommand(
             Command::new("status")
@@ -84,6 +96,14 @@ fn main() {
             .get_one::<String>("state")
             .expect("state is a required arg");
         event_prototype::run(state);
+    } else if let Some(daemon) = matches.subcommand_matches("daemon") {
+        if daemon.subcommand_matches("enable").is_some() {
+            daemon_commands::run_enable();
+        } else if daemon.subcommand_matches("disable").is_some() {
+            daemon_commands::run_disable();
+        } else if daemon.subcommand_matches("status").is_some() {
+            daemon_commands::run_status();
+        }
     } else if let Some(status) = matches.subcommand_matches("status") {
         let session = status.get_one::<String>("session").map(|s| s.as_str());
         query_commands::run_status(session);

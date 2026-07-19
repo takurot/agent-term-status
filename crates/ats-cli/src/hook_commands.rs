@@ -35,6 +35,7 @@ pub fn run_ingest(provider: &str) {
     let _ = socket_client::send_frame_to_daemon(&payload);
 }
 
+#[allow(dead_code)]
 pub fn run_event(state_str: &str, activity_label: Option<&str>, session_id: Option<&str>) {
     let state: AgentState =
         match serde_json::from_value(serde_json::Value::String(state_str.to_lowercase())) {
@@ -58,6 +59,7 @@ pub fn run_event(state_str: &str, activity_label: Option<&str>, session_id: Opti
     }
 }
 
+#[allow(dead_code)]
 pub fn run_reset(all: bool, session_id: Option<&str>) {
     let target = if all {
         "all".to_string()
@@ -115,6 +117,7 @@ fn build_event(provider: &str, value: &serde_json::Value) -> Result<NormalizedEv
     Ok(event)
 }
 
+#[allow(dead_code)]
 fn build_manual_event(
     state: AgentState,
     activity_label: Option<&str>,
@@ -149,6 +152,7 @@ fn build_manual_event(
     }
 }
 
+#[allow(dead_code)]
 fn state_to_event_type(state: AgentState) -> EventType {
     match state {
         AgentState::Working => EventType::AgentWorking,
@@ -161,6 +165,7 @@ fn state_to_event_type(state: AgentState) -> EventType {
     }
 }
 
+#[allow(dead_code)]
 fn run_standalone_render(state: AgentState, _activity_label: Option<&str>) {
     let state_str = match state {
         AgentState::Idle => "idle",

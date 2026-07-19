@@ -63,7 +63,7 @@ fn cli(name: String) -> Command {
         )
         .subcommand(
             Command::new("reset")
-                .about("Reset renderer state")
+                .about("Reset terminal pane visuals to default")
                 .arg(
                     Arg::new("all")
                         .long("all")
@@ -77,9 +77,6 @@ fn cli(name: String) -> Command {
                         .value_name("ID")
                         .help("Reset a specific session"),
                 ),
-        )
-        .subcommand(
-            Command::new("reset").about("Reset terminal pane visuals to default (standalone)"),
         )
         .subcommand(
             Command::new("completions")

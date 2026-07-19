@@ -198,6 +198,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "ats-rendering"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "ats-config",
+ "ats-core",
+ "ats-renderer",
+ "chrono",
+ "tokio",
+]
+
+[[package]]
 name = "ats-state-engine"
 version = "0.1.0"
 dependencies = [

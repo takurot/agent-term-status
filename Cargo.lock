@@ -131,11 +131,19 @@ dependencies = [
 name = "ats-daemon"
 version = "0.1.0"
 dependencies = [
+ "ats-config",
+ "ats-core",
+ "ats-renderer",
+ "ats-rendering",
+ "ats-state-engine",
+ "chrono",
  "dirs",
  "libc",
+ "serde_json",
  "tempfile",
  "thiserror",
  "tokio",
+ "uuid",
 ]
 
 [[package]]

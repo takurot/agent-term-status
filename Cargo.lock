@@ -176,6 +176,15 @@ dependencies = [
 [[package]]
 name = "ats-renderer-notification"
 version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "ats-config",
+ "ats-core",
+ "ats-renderer",
+ "chrono",
+ "thiserror",
+ "tokio",
+]
 
 [[package]]
 name = "ats-renderer-tmux"

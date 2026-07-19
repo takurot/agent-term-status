@@ -14,4 +14,10 @@ path = "src/main.rs"
 clap = { workspace = true }
 clap_complete = { workspace = true }
 ats-core = { path = "../ats-core" }
+ats-daemon = { path = "../ats-daemon" }
+ats-config = { path = "../ats-config" }
 serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

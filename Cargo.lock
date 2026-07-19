@@ -172,6 +172,13 @@ version = "0.1.0"
 [[package]]
 name = "ats-renderer-tmux"
 version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "ats-config",
+ "ats-core",
+ "ats-renderer",
+ "tokio",
+]
 
 [[package]]
 name = "ats-state-engine"

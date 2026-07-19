@@ -72,9 +72,13 @@ impl ConfigPaths {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn custom_xdg_config_home() {
+        let _guard = ENV_LOCK.lock().unwrap();
         std::env::set_var("XDG_CONFIG_HOME", "/custom/config");
         std::env::set_var("XDG_STATE_HOME", "/custom/state");
         std::env::set_var("XDG_RUNTIME_DIR", "/custom/runtime");
@@ -107,6 +111,7 @@ mod tests {
 
     #[test]
     fn empty_xdg_vars_fallback() {
+        let _guard = ENV_LOCK.lock().unwrap();
         std::env::set_var("XDG_CONFIG_HOME", "");
         std::env::set_var("XDG_STATE_HOME", "");
         std::env::set_var("XDG_RUNTIME_DIR", "");

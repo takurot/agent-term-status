@@ -43,10 +43,7 @@ async fn main() -> ExitCode {
             .expect("state is a required arg");
 
         let socket_path = standalone_render::daemon_socket_path();
-        let daemon_up = socket_path
-            .as_ref()
-            .map(|p| standalone_render::daemon_reachable(p))
-            .unwrap_or(false);
+        let daemon_up = standalone_render::daemon_reachable(&socket_path);
 
         if daemon_up {
             // Daemon is available — delegate to it (future: send via socket).

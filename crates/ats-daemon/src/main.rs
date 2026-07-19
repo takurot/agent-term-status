@@ -1,13 +1,15 @@
 //! `ats-daemon` binary entry point (I-13, I-14).
 //!
-//! Startup sequence: resolve paths → acquire PID file (stale detection)
+//! Startup sequence: resolve paths → init logging → acquire PID file
 //! → bind socket (`0600`) → start broker → serve until SIGTERM/SIGINT
 //! → graceful drain → unlink socket and PID file.
 
 use std::process::ExitCode;
 
 use ats_config::theme::Theme;
-use ats_daemon::{Broker, BrokerConfig, DaemonPaths, PidFile, ServerConfig, SocketServer};
+use ats_daemon::{
+    init_logging, Broker, BrokerConfig, DaemonPaths, PidFile, ServerConfig, SocketServer,
+};
 use ats_rendering::{EngineConfig, RenderingEngine};
 use ats_state_engine::StateEngine;
 use tokio::signal::unix::{signal, SignalKind};
@@ -30,6 +32,11 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let paths = DaemonPaths::resolve();
     paths.ensure_parent_dirs()?;
 
+    let config = ats_config::Config::default_config();
+    if let Err(e) = init_logging(&paths.logs_dir, &config) {
+        eprintln!("ats-daemon: failed to init logging: {e}");
+    }
+
     let _pid_guard = PidFile::acquire(&paths.pid_path)?;
     let server = SocketServer::bind(&paths.socket_path, ServerConfig::default())?;
 
@@ -37,7 +44,6 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let (shutdown_tx, shutdown_rx_server) = watch::channel(false);
     let shutdown_rx_broker = shutdown_tx.subscribe();
 
-    // Signal handlers installed before serving.
     let mut sigterm = signal(SignalKind::terminate())?;
     let mut sigint = signal(SignalKind::interrupt())?;
     tokio::spawn(async move {

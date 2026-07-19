@@ -22,6 +22,8 @@ pub struct Config {
     pub tts: TtsConfig,
     #[serde(default)]
     pub logging: LoggingConfig,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub theme: Option<String>,
 }
 
 fn default_version() -> u32 {
@@ -74,6 +76,7 @@ impl Config {
             providers: ProvidersConfig::default(),
             tts: TtsConfig::default(),
             logging: LoggingConfig::default(),
+            theme: Some("default".to_string()),
         }
     }
 }

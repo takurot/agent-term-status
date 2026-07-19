@@ -89,9 +89,15 @@ pub fn run_preview(name: &str) {
             let color_preview = if let Some(ref hex) = entry.color {
                 format!(
                     "\x1b[48;2;{};{};{}m  \x1b[0m",
-                    hex.get(1..3).and_then(|s| u8::from_str_radix(s, 16).ok()).unwrap_or(0),
-                    hex.get(3..5).and_then(|s| u8::from_str_radix(s, 16).ok()).unwrap_or(0),
-                    hex.get(5..7).and_then(|s| u8::from_str_radix(s, 16).ok()).unwrap_or(0),
+                    hex.get(1..3)
+                        .and_then(|s| u8::from_str_radix(s, 16).ok())
+                        .unwrap_or(0),
+                    hex.get(3..5)
+                        .and_then(|s| u8::from_str_radix(s, 16).ok())
+                        .unwrap_or(0),
+                    hex.get(5..7)
+                        .and_then(|s| u8::from_str_radix(s, 16).ok())
+                        .unwrap_or(0),
                 )
             } else {
                 "  ".to_string()

@@ -45,7 +45,8 @@ pub fn init_logging(logs_dir: &Path, config: &Config) -> Result<(), LogInitError
     tracing_subscriber::registry()
         .with(env_filter)
         .with(json_layer)
-        .init();
+        .try_init()
+        .ok();
 
     Ok(())
 }

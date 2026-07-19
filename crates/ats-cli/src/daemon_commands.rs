@@ -36,6 +36,12 @@ fn daemon_binary_path() -> PathBuf {
     PathBuf::from("ats-daemon")
 }
 
+fn xml_escape(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+}
+
 pub fn run_enable() {
     let plist_path = plist_path();
     let daemon_binary = daemon_binary_path();
@@ -85,9 +91,9 @@ pub fn run_enable() {
 </plist>
 "#,
         label = LAUNCHD_LABEL,
-        binary = daemon_binary.display(),
-        stdout_log = log_dir.join("daemon.stdout.log").display(),
-        stderr_log = log_dir.join("daemon.stderr.log").display(),
+        binary = xml_escape(&daemon_binary.display().to_string()),
+        stdout_log = xml_escape(&log_dir.join("daemon.stdout.log").display().to_string()),
+        stderr_log = xml_escape(&log_dir.join("daemon.stderr.log").display().to_string()),
     );
 
     std::fs::write(&plist_path, &plist_content).unwrap_or_else(|e| {
@@ -202,6 +208,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(target_os = "macos")]
     fn daemon_status_detects_not_registered() {
         let output = Command::new("launchctl")
             .args(["list", "nonexistent.service.12345"])
@@ -209,5 +216,14 @@ mod tests {
             .unwrap();
         let stdout = String::from_utf8_lossy(&output.stdout);
         assert!(!stdout.contains("nonexistent.service.12345"));
+    }
+
+    #[test]
+    fn xml_escape_handles_special_chars() {
+        assert_eq!(xml_escape("normal"), "normal");
+        assert_eq!(xml_escape("a&b"), "a&amp;b");
+        assert_eq!(xml_escape("a<b"), "a&lt;b");
+        assert_eq!(xml_escape("a>b"), "a&gt;b");
+        assert_eq!(xml_escape("&&"), "&amp;&amp;");
     }
 }

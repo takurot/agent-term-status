@@ -119,7 +119,9 @@ pub fn start(foreground: bool) -> ExitCode {
     if foreground {
         cmd.stdout(Stdio::inherit()).stderr(Stdio::inherit());
     } else {
-        cmd.stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
+        cmd.stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
 
         unsafe {
             #[cfg(any(target_os = "macos", target_os = "freebsd", target_os = "netbsd"))]

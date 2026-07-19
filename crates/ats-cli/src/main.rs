@@ -5,6 +5,7 @@ use std::process::ExitCode;
 mod daemon_commands;
 mod doctor;
 mod event_prototype;
+mod hook_commands;
 mod query_commands;
 mod socket_client;
 mod standalone_render;
@@ -28,11 +29,54 @@ fn cli(name: String) -> Command {
         .about("Visualize AI coding agent state in your terminal")
         .arg_required_else_help(true)
         .subcommand(
+            Command::new("ingest")
+                .about("Ingest hook event from stdin (hook path, fail-open)")
+                .arg(
+                    Arg::new("provider")
+                        .long("provider")
+                        .short('p')
+                        .required(true)
+                        .value_name("NAME")
+                        .help("Provider name (e.g. claude, opencode)"),
+                ),
+        )
+        .subcommand(
             Command::new("event")
                 .about("Send a manual state event (standalone render when daemon is down)")
                 .arg(Arg::new("state").required(true).value_name("STATE").help(
                     "Agent state in lowercase: idle|working|attention|risk|result|error|unknown",
-                )),
+                ))
+                .arg(
+                    Arg::new("activity")
+                        .long("activity")
+                        .short('a')
+                        .value_name("LABEL")
+                        .help("Activity label (e.g. 'Running tests')"),
+                )
+                .arg(
+                    Arg::new("session")
+                        .long("session")
+                        .short('s')
+                        .value_name("ID")
+                        .help("Session identifier"),
+                ),
+        )
+        .subcommand(
+            Command::new("reset")
+                .about("Reset renderer state")
+                .arg(
+                    Arg::new("all")
+                        .long("all")
+                        .help("Reset all sessions")
+                        .action(clap::ArgAction::SetTrue),
+                )
+                .arg(
+                    Arg::new("session")
+                        .long("session")
+                        .short('s')
+                        .value_name("ID")
+                        .help("Reset a specific session"),
+                ),
         )
         .subcommand(
             Command::new("reset").about("Reset terminal pane visuals to default (standalone)"),
@@ -157,7 +201,13 @@ fn cli(name: String) -> Command {
 async fn main() -> ExitCode {
     let executable_name = invoked_name();
     let matches = cli(executable_name.clone()).get_matches();
-    if let Some(event) = matches.subcommand_matches("event") {
+    if let Some(ingest) = matches.subcommand_matches("ingest") {
+        let provider = ingest
+            .get_one::<String>("provider")
+            .expect("provider is a required arg");
+        hook_commands::run_ingest(provider);
+        ExitCode::SUCCESS
+    } else if let Some(event) = matches.subcommand_matches("event") {
         let state = event
             .get_one::<String>("state")
             .expect("state is a required arg");

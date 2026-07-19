@@ -14,6 +14,9 @@ use tokio::task::JoinSet;
 
 use crate::framing::read_frame;
 
+/// Pause after a failed `accept` before retrying.
+const ACCEPT_ERROR_BACKOFF: Duration = Duration::from_millis(50);
+
 /// Tunables for the socket server.
 #[derive(Debug, Clone)]
 pub struct ServerConfig {
@@ -49,9 +52,38 @@ pub struct SocketServer {
 impl SocketServer {
     /// Binds the socket at `socket_path` and restricts its mode to `0600`.
     ///
+    /// The chmod happens inside the bind step, before the server is
+    /// handed out. The instant between `bind(2)` and `chmod(2)` is not
+    /// exploitable: both supported parents (`$XDG_RUNTIME_DIR` per the
+    /// XDG spec, or the `0700` state dir created by
+    /// [`crate::DaemonPaths::ensure_parent_dirs`]) are user-only, so no
+    /// other user can traverse to the socket. A process-wide `umask`
+    /// dance was rejected: it races with concurrent file creation on
+    /// other threads.
+    ///
+    /// As defense in depth, binding is refused when the parent directory
+    /// is accessible by group or others.
+    ///
     /// A pre-existing socket file is unlinked first; callers must ensure
     /// via [`crate::PidFile`] that no live daemon owns it.
     pub fn bind(socket_path: &Path, config: ServerConfig) -> std::io::Result<Self> {
+        #[cfg(unix)]
+        if let Some(parent) = socket_path.parent() {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = std::fs::metadata(parent)?.permissions().mode();
+            if mode & 0o077 != 0 {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::PermissionDenied,
+                    format!(
+                        "socket parent directory {} is group/world accessible \
+                         (mode {:o}); refusing to bind (SPEC §14.2)",
+                        parent.display(),
+                        mode & 0o777
+                    ),
+                ));
+            }
+        }
+
         match std::fs::remove_file(socket_path) {
             Ok(_) => {}
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
@@ -82,6 +114,8 @@ impl SocketServer {
     /// On shutdown: stops accepting, drains in-flight connections within
     /// the configured grace period, unlinks the socket file.
     pub async fn run(self, events: mpsc::Sender<Vec<u8>>, mut shutdown: watch::Receiver<bool>) {
+        // Unlinks the socket file even if this task panics mid-run.
+        let _socket_guard = SocketFileGuard(self.socket_path.clone());
         let semaphore = Arc::new(Semaphore::new(self.config.max_connections));
         let mut connections: JoinSet<()> = JoinSet::new();
 
@@ -93,8 +127,14 @@ impl SocketServer {
                     }
                 }
                 accepted = self.listener.accept() => {
-                    let Ok((stream, _addr)) = accepted else {
-                        continue;
+                    let (stream, _addr) = match accepted {
+                        Ok(conn) => conn,
+                        Err(_e) => {
+                            // Back off so a permanently broken listener fd
+                            // cannot spin the loop at full CPU.
+                            tokio::time::sleep(ACCEPT_ERROR_BACKOFF).await;
+                            continue;
+                        }
                     };
                     match Arc::clone(&semaphore).try_acquire_owned() {
                         Ok(permit) => {
@@ -122,7 +162,15 @@ impl SocketServer {
         {
             connections.abort_all();
         }
-        let _ = std::fs::remove_file(&self.socket_path);
+    }
+}
+
+/// Removes the socket file when dropped (normal return or panic unwind).
+struct SocketFileGuard(PathBuf);
+
+impl Drop for SocketFileGuard {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_file(&self.0);
     }
 }
 

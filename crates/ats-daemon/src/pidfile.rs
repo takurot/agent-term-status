@@ -30,24 +30,49 @@ pub struct PidFile {
 impl PidFile {
     /// Acquires the PID file at `path`, replacing stale files whose PID
     /// no longer refers to a live process.
+    ///
+    /// Uses `O_EXCL` creation so two concurrently starting daemons can
+    /// never both own the file: the loser of the create race re-reads
+    /// the file and sees the winner's live PID.
     pub fn acquire(path: &Path) -> Result<Self, PidFileError> {
-        match std::fs::read_to_string(path) {
-            Ok(contents) => {
-                if let Ok(pid) = contents.trim().parse::<i32>() {
-                    if pid != std::process::id() as i32 && process_alive(pid) {
-                        return Err(PidFileError::AlreadyRunning { pid });
-                    }
+        const MAX_ATTEMPTS: usize = 3;
+
+        for _ in 0..MAX_ATTEMPTS {
+            match write_own_pid_exclusive(path) {
+                Ok(()) => {
+                    return Ok(Self {
+                        path: path.to_path_buf(),
+                    })
                 }
-                // Unparseable or dead PID: stale file, fall through and replace.
+                Err(e) if e.kind() == io::ErrorKind::AlreadyExists => {
+                    match std::fs::read_to_string(path) {
+                        Ok(contents) => {
+                            if let Ok(pid) = contents.trim().parse::<i32>() {
+                                if pid != std::process::id() as i32 && process_alive(pid) {
+                                    return Err(PidFileError::AlreadyRunning { pid });
+                                }
+                            }
+                            // Unparseable or dead PID: stale file.
+                        }
+                        // File vanished between create and read: retry.
+                        Err(e) if e.kind() == io::ErrorKind::NotFound => continue,
+                        Err(e) => return Err(e.into()),
+                    }
+                    match std::fs::remove_file(path) {
+                        Ok(()) => {}
+                        Err(e) if e.kind() == io::ErrorKind::NotFound => {}
+                        Err(e) => return Err(e.into()),
+                    }
+                    // Retry exclusive creation after unlinking the stale file.
+                }
+                Err(e) => return Err(e.into()),
             }
-            Err(e) if e.kind() == io::ErrorKind::NotFound => {}
-            Err(e) => return Err(e.into()),
         }
 
-        write_own_pid(path)?;
-        Ok(Self {
-            path: path.to_path_buf(),
-        })
+        Err(PidFileError::Io(io::Error::new(
+            io::ErrorKind::WouldBlock,
+            "PID file contention: another process keeps recreating it",
+        )))
     }
 
     /// Path of the PID file.
@@ -62,11 +87,11 @@ impl Drop for PidFile {
     }
 }
 
-fn write_own_pid(path: &Path) -> io::Result<()> {
+fn write_own_pid_exclusive(path: &Path) -> io::Result<()> {
     use std::io::Write;
 
     let mut options = std::fs::OpenOptions::new();
-    options.write(true).create(true).truncate(true);
+    options.write(true).create_new(true);
     #[cfg(unix)]
     {
         use std::os::unix::fs::OpenOptionsExt;

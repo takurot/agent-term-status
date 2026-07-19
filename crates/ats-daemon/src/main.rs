@@ -35,21 +35,11 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let broker = tokio::spawn(async move { while event_rx.recv().await.is_some() {} });
 
     let (shutdown_tx, shutdown_rx) = watch::channel(false);
+    // Install handlers before serving: a daemon that cannot register
+    // them must fail startup rather than run unkillable-by-signal.
+    let mut sigterm = signal(SignalKind::terminate())?;
+    let mut sigint = signal(SignalKind::interrupt())?;
     tokio::spawn(async move {
-        let mut sigterm = match signal(SignalKind::terminate()) {
-            Ok(s) => s,
-            Err(e) => {
-                eprintln!("ats-daemon: failed to install SIGTERM handler: {e}");
-                return;
-            }
-        };
-        let mut sigint = match signal(SignalKind::interrupt()) {
-            Ok(s) => s,
-            Err(e) => {
-                eprintln!("ats-daemon: failed to install SIGINT handler: {e}");
-                return;
-            }
-        };
         tokio::select! {
             _ = sigterm.recv() => {}
             _ = sigint.recv() => {}

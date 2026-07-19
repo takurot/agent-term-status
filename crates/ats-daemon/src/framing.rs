@@ -60,11 +60,14 @@ where
 {
     use tokio::io::AsyncWriteExt;
 
-    let len =
-        u32::try_from(payload.len()).map_err(|_| FrameError::Oversized { declared: u32::MAX })?;
-    if len > MAX_FRAME_BYTES {
-        return Err(FrameError::Oversized { declared: len });
+    if payload.len() > MAX_FRAME_BYTES as usize {
+        return Err(FrameError::Oversized {
+            // Saturates for payloads beyond u32 range; reports the
+            // attempted size only, never payload contents.
+            declared: u32::try_from(payload.len()).unwrap_or(u32::MAX),
+        });
     }
+    let len = payload.len() as u32;
 
     writer.write_all(&len.to_be_bytes()).await?;
     writer.write_all(payload).await?;
@@ -143,12 +146,12 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn truncated_header_is_clean_eof() {
+    async fn truncated_header_is_treated_as_disconnect() {
         let mut cursor = Cursor::new(vec![0u8, 0u8]);
-        let err = read_frame(&mut cursor).await;
-        // Partial header is indistinguishable from an aborted client; the
-        // read_exact contract surfaces it as UnexpectedEof.
-        assert!(err.is_err() || err.unwrap().is_none());
+        let got = read_frame(&mut cursor).await.unwrap();
+        // A partial header is an aborted client; read_exact surfaces it
+        // as UnexpectedEof, which read_frame maps to a clean disconnect.
+        assert!(got.is_none());
     }
 
     #[tokio::test]

@@ -14,6 +14,10 @@ pub struct DaemonPaths {
     pub socket_path: PathBuf,
     /// PID file path.
     pub pid_path: PathBuf,
+    /// Whether the parent directory belongs to agent-term-status (the
+    /// state-dir fallback) as opposed to a system-managed directory
+    /// (`$XDG_RUNTIME_DIR`).
+    owns_parent_dir: bool,
 }
 
 impl DaemonPaths {
@@ -34,6 +38,7 @@ impl DaemonPaths {
                 Self {
                     socket_path: base.join("agent-term-status.sock"),
                     pid_path: base.join("agent-term-status.pid"),
+                    owns_parent_dir: false,
                 }
             }
             None => {
@@ -45,24 +50,29 @@ impl DaemonPaths {
                 Self {
                     socket_path: base.join("status.sock"),
                     pid_path: base.join("status.pid"),
+                    owns_parent_dir: true,
                 }
             }
         }
     }
 
-    /// Creates missing parent directories with user-only permissions
-    /// (`0700`). Pre-existing directories (e.g. `$XDG_RUNTIME_DIR` itself)
-    /// are left untouched.
+    /// Creates missing parent directories.
+    ///
+    /// The agent-term-status state dir (fallback mode) is always
+    /// tightened to `0700`: it belongs exclusively to this tool, and
+    /// other components may have created it with umask-derived
+    /// permissions. System-managed directories (`$XDG_RUNTIME_DIR`) are
+    /// never chmodded.
     pub fn ensure_parent_dirs(&self) -> io::Result<()> {
         for path in [&self.socket_path, &self.pid_path] {
             if let Some(parent) = path.parent() {
                 if !parent.exists() {
                     std::fs::create_dir_all(parent)?;
-                    #[cfg(unix)]
-                    {
-                        use std::os::unix::fs::PermissionsExt;
-                        std::fs::set_permissions(parent, std::fs::Permissions::from_mode(0o700))?;
-                    }
+                }
+                #[cfg(unix)]
+                if self.owns_parent_dir {
+                    use std::os::unix::fs::PermissionsExt;
+                    std::fs::set_permissions(parent, std::fs::Permissions::from_mode(0o700))?;
                 }
             }
         }
@@ -123,6 +133,29 @@ mod tests {
             use std::os::unix::fs::PermissionsExt;
             let mode = std::fs::metadata(parent).unwrap().permissions().mode();
             assert_eq!(mode & 0o777, 0o700);
+        }
+    }
+
+    #[test]
+    fn ensure_parent_dirs_tightens_preexisting_fallback_dir() {
+        let tmp = tempfile::tempdir().unwrap();
+        let paths = DaemonPaths::resolve_with_env(None, Some(tmp.path()));
+        let parent = paths.socket_path.parent().unwrap();
+        std::fs::create_dir_all(parent).unwrap();
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(parent, std::fs::Permissions::from_mode(0o755)).unwrap();
+
+            paths.ensure_parent_dirs().unwrap();
+
+            let mode = std::fs::metadata(parent).unwrap().permissions().mode();
+            assert_eq!(
+                mode & 0o777,
+                0o700,
+                "our own state dir must be tightened even when pre-existing"
+            );
         }
     }
 

@@ -15,6 +15,15 @@ fn socket_path(dir: &tempfile::TempDir) -> PathBuf {
     dir.path().join("s.sock")
 }
 
+/// Tempdir tightened to `0700`: `tempfile` creates umask-derived modes
+/// (e.g. 755), which the server's parent-directory check refuses.
+fn secure_tempdir() -> tempfile::TempDir {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+    dir
+}
+
 struct RunningServer {
     events: mpsc::Receiver<Vec<u8>>,
     shutdown: watch::Sender<bool>,
@@ -42,7 +51,7 @@ async fn recv_event(rx: &mut mpsc::Receiver<Vec<u8>>) -> Vec<u8> {
 
 #[tokio::test]
 async fn multi_client_round_trip() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = secure_tempdir();
     let path = socket_path(&dir);
     let mut server = start_server(&path, ServerConfig::default());
 
@@ -75,7 +84,7 @@ async fn multi_client_round_trip() {
 
 #[tokio::test]
 async fn single_client_multiple_frames_in_order() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = secure_tempdir();
     let path = socket_path(&dir);
     let mut server = start_server(&path, ServerConfig::default());
 
@@ -97,7 +106,7 @@ async fn single_client_multiple_frames_in_order() {
 
 #[tokio::test]
 async fn socket_mode_is_0600_at_bind_time() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = secure_tempdir();
     let path = socket_path(&dir);
     let _server = SocketServer::bind(&path, ServerConfig::default()).unwrap();
 
@@ -107,8 +116,21 @@ async fn socket_mode_is_0600_at_bind_time() {
 }
 
 #[tokio::test]
-async fn oversized_payload_rejected_and_socket_stays_available() {
+async fn bind_refuses_group_or_world_accessible_parent_dir() {
+    use std::os::unix::fs::PermissionsExt;
     let dir = tempfile::tempdir().unwrap();
+    std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o755)).unwrap();
+
+    let err = SocketServer::bind(&socket_path(&dir), ServerConfig::default()).unwrap_err();
+    assert_eq!(err.kind(), std::io::ErrorKind::PermissionDenied);
+
+    // Restore so the tempdir can be cleaned up.
+    std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+}
+
+#[tokio::test]
+async fn oversized_payload_rejected_and_socket_stays_available() {
+    let dir = secure_tempdir();
     let path = socket_path(&dir);
     let mut server = start_server(&path, ServerConfig::default());
 
@@ -139,7 +161,7 @@ async fn oversized_payload_rejected_and_socket_stays_available() {
 
 #[tokio::test]
 async fn connect_to_dead_socket_fails_cleanly() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = secure_tempdir();
     let path = socket_path(&dir);
 
     // Bind then drop the listener, leaving a stale socket file behind.
@@ -177,7 +199,7 @@ async fn connect_to_dead_socket_fails_cleanly() {
 
 #[tokio::test]
 async fn stale_socket_file_is_replaced_on_bind() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = secure_tempdir();
     let path = socket_path(&dir);
     {
         let listener = tokio::net::UnixListener::bind(&path).unwrap();
@@ -200,7 +222,7 @@ async fn stale_socket_file_is_replaced_on_bind() {
 #[tokio::test]
 async fn kill_dash_nine_recovery_stale_pid_and_socket() {
     // Simulates the post-`kill -9` state: stale PID file + stale socket.
-    let dir = tempfile::tempdir().unwrap();
+    let dir = secure_tempdir();
     let pid_path = dir.path().join("d.pid");
     let sock = socket_path(&dir);
 
@@ -237,7 +259,7 @@ async fn kill_dash_nine_recovery_stale_pid_and_socket() {
 
 #[tokio::test]
 async fn graceful_shutdown_flushes_in_flight_and_unlinks_socket() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = secure_tempdir();
     let path = socket_path(&dir);
     let mut server = start_server(&path, ServerConfig::default());
 
@@ -263,7 +285,7 @@ async fn graceful_shutdown_flushes_in_flight_and_unlinks_socket() {
 
 #[tokio::test]
 async fn max_connections_excess_client_is_closed() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = secure_tempdir();
     let path = socket_path(&dir);
     let config = ServerConfig {
         max_connections: 1,
@@ -301,7 +323,7 @@ async fn max_connections_excess_client_is_closed() {
 
 #[tokio::test]
 async fn idle_connection_is_closed_after_read_timeout() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = secure_tempdir();
     let path = socket_path(&dir);
     let config = ServerConfig {
         read_timeout: Duration::from_millis(100),
@@ -325,7 +347,7 @@ async fn idle_connection_is_closed_after_read_timeout() {
 async fn startup_completes_within_300ms() {
     // SPEC §16: startup ≤ 300 ms. Path resolution + PID acquisition +
     // bind is the daemon's critical startup path.
-    let dir = tempfile::tempdir().unwrap();
+    let dir = secure_tempdir();
     let paths = DaemonPaths::resolve_with_env(Some(dir.path().to_str().unwrap()), None);
 
     let started = Instant::now();
@@ -341,7 +363,7 @@ async fn startup_completes_within_300ms() {
 
 #[tokio::test]
 async fn frame_helpers_round_trip_over_real_socket() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = secure_tempdir();
     let path = socket_path(&dir);
     let listener = tokio::net::UnixListener::bind(&path).unwrap();
 

@@ -12,13 +12,12 @@ pub fn daemon_reachable(socket_path: &Path) -> bool {
 }
 
 /// Resolve daemon socket path from environment.
-pub fn daemon_socket_path() -> Option<std::path::PathBuf> {
+pub fn daemon_socket_path() -> std::path::PathBuf {
     ats_daemon::DaemonPaths::resolve_with_env(
         std::env::var("XDG_RUNTIME_DIR").ok().as_deref(),
         dirs::home_dir().as_deref(),
     )
     .socket_path
-    .into()
 }
 
 /// Build terminal context from the current process environment.

@@ -115,9 +115,12 @@ pub fn start(foreground: bool) -> ExitCode {
     };
 
     let mut cmd = Command::new(&binary);
-    cmd.stdout(Stdio::inherit()).stderr(Stdio::inherit());
 
-    if !foreground {
+    if foreground {
+        cmd.stdout(Stdio::inherit()).stderr(Stdio::inherit());
+    } else {
+        cmd.stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
+
         unsafe {
             #[cfg(any(target_os = "macos", target_os = "freebsd", target_os = "netbsd"))]
             {

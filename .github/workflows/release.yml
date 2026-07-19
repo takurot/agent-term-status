@@ -1,0 +1,90 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        target:
+          - aarch64-apple-darwin
+          - x86_64-apple-darwin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build release
+        run: |
+          cargo build --release --target ${{ matrix.target }}
+
+      - name: Package
+        run: |
+          cd target/${{ matrix.target }}/release
+          tar czf agent-term-status-${{ matrix.target }}.tar.gz ats ats-daemon
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/agent-term-status-${{ matrix.target }}.tar.gz
+
+  universal:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: artifacts
+
+      - name: Create universal binaries
+        run: |
+          mkdir -p release/aarch64 release/x86_64 release/universal
+          for arch in aarch64 x86_64; do
+            tar xzf artifacts/agent-term-status-${arch}-apple-darwin.tar.gz -C release/${arch}/
+          done
+
+          mkdir -p release/universal
+          cp release/aarch64/ats release/universal/ats
+          cp release/aarch64/ats-daemon release/universal/ats-daemon
+
+          # Universal binary using lipo (for x86_64 + aarch64)
+          lipo -create release/aarch64/ats release/x86_64/ats -output release/universal/ats 2>/dev/null || true
+          lipo -create release/aarch64/ats-daemon release/x86_64/ats-daemon -output release/universal/ats-daemon 2>/dev/null || true
+
+          # Single-arch fallback (if lipo not available or cross-compile failed)
+          for bin in ats ats-daemon; do
+            if [ ! -f "release/universal/$bin" ] || [ ! -s "release/universal/$bin" ]; then
+              cp "release/aarch64/$bin" "release/universal/$bin"
+            fi
+          done
+
+          for arch in aarch64 x86_64 universal; do
+            cd release/${arch}
+            tar czf ../../agent-term-status-${arch}-apple-darwin.tar.gz ats ats-daemon
+            cd ../..
+          done
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            agent-term-status-*-apple-darwin.tar.gz
+          generate_release_notes: true

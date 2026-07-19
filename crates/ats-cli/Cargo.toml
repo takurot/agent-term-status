@@ -12,6 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { workspace = true }
+clap_complete = { workspace = true }
 ats-core = { path = "../ats-core" }
 ats-daemon = { path = "../ats-daemon" }
 ats-config = { path = "../ats-config" }
@@ -20,4 +21,9 @@ ats-renderer-tmux = { path = "../ats-renderer-tmux" }
 async-trait = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "net", "sync"] }
 serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+libc = { workspace = true }
 dirs = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

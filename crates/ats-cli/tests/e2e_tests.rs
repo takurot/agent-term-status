@@ -26,8 +26,7 @@ fn e2e_full_lifecycle() {
     let sibling = session.split();
     assert_ne!(pane, sibling, "pane and sibling must be distinct");
 
-    // Step 1: WORKING → border should have color
-    let out = run_ats_event("working", &pane);
+    let out = run_ats_event("working", &pane, session.tmpdir_path());
     assert!(
         out.status.success(),
         "working failed: {}",
@@ -45,8 +44,7 @@ fn e2e_full_lifecycle() {
         "sibling pane must not be affected (SPEC §21 #5)"
     );
 
-    // Step 2: ATTENTION → border should change
-    let out = run_ats_event("attention", &pane);
+    let out = run_ats_event("attention", &pane, session.tmpdir_path());
     assert!(out.status.success());
     let attn_style = session.pane_border_style(&pane);
     assert!(
@@ -54,8 +52,7 @@ fn e2e_full_lifecycle() {
         "ATTENTION should set border style"
     );
 
-    // Step 3: RESULT
-    let out = run_ats_event("result", &pane);
+    let out = run_ats_event("result", &pane, session.tmpdir_path());
     assert!(out.status.success());
     let result_style = session.pane_border_style(&pane);
     assert!(
@@ -63,8 +60,7 @@ fn e2e_full_lifecycle() {
         "RESULT should set border style"
     );
 
-    // Step 4: ERROR
-    let out = run_ats_event("error", &pane);
+    let out = run_ats_event("error", &pane, session.tmpdir_path());
     assert!(out.status.success());
     let error_style = session.pane_border_style(&pane);
     assert!(
@@ -72,8 +68,7 @@ fn e2e_full_lifecycle() {
         "ERROR should set border style"
     );
 
-    // Step 5: IDLE → border should reset
-    let out = run_ats_event("idle", &pane);
+    let out = run_ats_event("idle", &pane, session.tmpdir_path());
     assert!(out.status.success());
     assert_eq!(
         session.pane_border_style(&pane),
@@ -81,7 +76,6 @@ fn e2e_full_lifecycle() {
         "IDLE must reset border style"
     );
 
-    // Sibling should still be untouched
     assert_eq!(
         session.pane_border_style(&sibling),
         "",
@@ -105,8 +99,7 @@ fn e2e_multi_pane_isolation() {
     let pane_a = session.pane_id();
     let pane_b = session.split();
 
-    // Set pane A to WORKING (blue)
-    let out = run_ats_event("working", &pane_a);
+    let out = run_ats_event("working", &pane_a, session.tmpdir_path());
     assert!(out.status.success());
     assert!(
         session
@@ -120,8 +113,7 @@ fn e2e_multi_pane_isolation() {
         "pane B should be untouched"
     );
 
-    // Set pane B to ATTENTION (orange)
-    let out = run_ats_event("attention", &pane_b);
+    let out = run_ats_event("attention", &pane_b, session.tmpdir_path());
     assert!(out.status.success());
     assert!(
         session
@@ -136,8 +128,7 @@ fn e2e_multi_pane_isolation() {
         "pane A should still show WORKING"
     );
 
-    // Reset pane A
-    let out = run_ats_event("idle", &pane_a);
+    let out = run_ats_event("idle", &pane_a, session.tmpdir_path());
     assert!(out.status.success());
     assert_eq!(
         session.pane_border_style(&pane_a),
@@ -155,7 +146,7 @@ fn e2e_multi_pane_isolation() {
 /// Fail-open: `ats event` returns exit 0 even when TMUX_PANE is not set.
 #[test]
 fn e2e_fail_open_no_tmux_pane() {
-    let out = Command::new(env!("CARGO_BIN_EXE_ats"))
+    let out = Command::new(option_env!("CARGO_BIN_EXE_ats").unwrap_or("ats"))
         .args(["event", "working"])
         .env_remove("TMUX_PANE")
         .env_remove("TMUX")
@@ -170,7 +161,7 @@ fn e2e_fail_open_no_tmux_pane() {
 /// Fail-open: `ats reset` returns exit 0 even without tmux context.
 #[test]
 fn e2e_fail_open_reset_no_tmux() {
-    let out = Command::new(env!("CARGO_BIN_EXE_ats"))
+    let out = Command::new(option_env!("CARGO_BIN_EXE_ats").unwrap_or("ats"))
         .args(["reset"])
         .env_remove("TMUX_PANE")
         .env_remove("TMUX")
@@ -197,8 +188,7 @@ fn e2e_reset_clears_pane() {
     let session = TmuxSession::new("ats-e2e-reset");
     let pane = session.pane_id();
 
-    // Set to WORKING first
-    let out = run_ats_event("working", &pane);
+    let out = run_ats_event("working", &pane, session.tmpdir_path());
     assert!(out.status.success());
     assert!(
         session
@@ -207,10 +197,10 @@ fn e2e_reset_clears_pane() {
         "WORKING should set border style"
     );
 
-    // Reset via CLI
-    let out = Command::new(env!("CARGO_BIN_EXE_ats"))
+    let out = Command::new(option_env!("CARGO_BIN_EXE_ats").unwrap_or("ats"))
         .args(["reset"])
         .env("TMUX_PANE", &pane)
+        .env("TMUX_TMPDIR", session.tmpdir_path())
         .output()
         .expect("run ats reset");
     assert!(
@@ -219,7 +209,6 @@ fn e2e_reset_clears_pane() {
         String::from_utf8_lossy(&out.stderr)
     );
 
-    // Should be cleared
     assert_eq!(
         session.pane_border_style(&pane),
         "",
@@ -242,8 +231,7 @@ fn e2e_standalone_mode() {
     let session = TmuxSession::new("ats-e2e-standalone");
     let pane = session.pane_id();
 
-    // Run without daemon — should fall back to standalone mode
-    let out = run_ats_event("working", &pane);
+    let out = run_ats_event("working", &pane, session.tmpdir_path());
     assert!(
         out.status.success(),
         "standalone event failed: {}",
@@ -267,7 +255,7 @@ fn e2e_standalone_mode() {
 /// Unknown state returns exit 0 (fail-open) and does not crash.
 #[test]
 fn e2e_fault_unknown_state() {
-    let out = Command::new(env!("CARGO_BIN_EXE_ats"))
+    let out = Command::new(option_env!("CARGO_BIN_EXE_ats").unwrap_or("ats"))
         .args(["event", "nonsense_state_xyzzy"])
         .output()
         .expect("run ats event");

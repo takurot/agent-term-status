@@ -73,36 +73,32 @@ pub fn run_logs(tail: bool, level: Option<&str>) {
 
     if tail {
         let mut ring: VecDeque<String> = VecDeque::with_capacity(1000);
-        for line_result in reader.lines() {
-            if let Ok(line) = line_result {
-                if let Some(ref n) = needle {
-                    if line.contains(n.as_str()) {
-                        if ring.len() == 1000 {
-                            ring.pop_front();
-                        }
-                        ring.push_back(line);
-                    }
-                } else {
+        for line in reader.lines().map_while(Result::ok) {
+            if let Some(ref n) = needle {
+                if line.contains(n.as_str()) {
                     if ring.len() == 1000 {
                         ring.pop_front();
                     }
                     ring.push_back(line);
                 }
+            } else {
+                if ring.len() == 1000 {
+                    ring.pop_front();
+                }
+                ring.push_back(line);
             }
         }
         for line in &ring {
             println!("{line}");
         }
     } else {
-        for line_result in reader.lines() {
-            if let Ok(line) = line_result {
-                if let Some(ref n) = needle {
-                    if line.contains(n.as_str()) {
-                        println!("{line}");
-                    }
-                } else {
+        for line in reader.lines().map_while(Result::ok) {
+            if let Some(ref n) = needle {
+                if line.contains(n.as_str()) {
                     println!("{line}");
                 }
+            } else {
+                println!("{line}");
             }
         }
     }

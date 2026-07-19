@@ -1,5 +1,6 @@
-use clap::{Arg, Command};
+use clap::{Arg, ArgAction, Command};
 use clap_complete::{generate, Shell};
+use std::process::ExitCode;
 
 mod daemon_commands;
 mod doctor;
@@ -71,14 +72,34 @@ fn cli(name: String) -> Command {
         )
         .subcommand(
             Command::new("daemon")
-                .about("Manage the ats-daemon service")
+                .about("Manage the ats daemon")
                 .arg_required_else_help(true)
+                .subcommand(
+                    Command::new("start")
+                        .about("Start the daemon (detaches by default)")
+                        .arg(
+                            Arg::new("foreground")
+                                .long("foreground")
+                                .action(ArgAction::SetTrue)
+                                .help("Run daemon in foreground"),
+                        ),
+                )
+                .subcommand(Command::new("stop").about("Stop the daemon via its PID file"))
+                .subcommand(
+                    Command::new("status")
+                        .about("Check if the daemon is running")
+                        .arg(
+                            Arg::new("json")
+                                .long("json")
+                                .action(ArgAction::SetTrue)
+                                .help("Output in JSON format"),
+                        ),
+                )
                 .subcommand(
                     Command::new("enable")
                         .about("Install launchd plist to auto-start daemon on login"),
                 )
-                .subcommand(Command::new("disable").about("Unload and remove launchd plist"))
-                .subcommand(Command::new("status").about("Show daemon status")),
+                .subcommand(Command::new("disable").about("Unload and remove launchd plist")),
         )
         .subcommand(
             Command::new("status")
@@ -128,7 +149,7 @@ fn cli(name: String) -> Command {
         )
 }
 
-fn main() {
+fn main() -> ExitCode {
     let executable_name = invoked_name();
     let matches = cli(executable_name.clone()).get_matches();
     if let Some(event) = matches.subcommand_matches("event") {
@@ -136,12 +157,14 @@ fn main() {
             .get_one::<String>("state")
             .expect("state is a required arg");
         event_prototype::run(state);
+        ExitCode::SUCCESS
     } else if let Some(completions) = matches.subcommand_matches("completions") {
         let shell = completions
             .get_one::<String>("shell")
             .expect("shell is a required arg");
         let mut cmd = cli(executable_name);
         print_completions(shell.as_str(), &mut cmd);
+        ExitCode::SUCCESS
     } else if let Some(theme) = matches.subcommand_matches("theme") {
         if theme.subcommand_matches("list").is_some() {
             theme_commands::run_list();
@@ -156,27 +179,50 @@ fn main() {
                 .expect("name is a required arg");
             theme_commands::run_apply(name);
         }
+        ExitCode::SUCCESS
     } else if let Some(daemon) = matches.subcommand_matches("daemon") {
-        if daemon.subcommand_matches("enable").is_some() {
-            daemon_commands::run_enable();
-        } else if daemon.subcommand_matches("disable").is_some() {
-            daemon_commands::run_disable();
-        } else if daemon.subcommand_matches("status").is_some() {
-            daemon_commands::run_status();
+        match daemon.subcommand() {
+            Some(("start", args)) => {
+                let foreground = args.get_flag("foreground");
+                daemon_commands::start(foreground)
+            }
+            Some(("stop", _)) => daemon_commands::stop(),
+            Some(("status", args)) => {
+                let json = args.get_flag("json");
+                daemon_commands::status(json)
+            }
+            Some(("enable", _)) => {
+                daemon_commands::run_enable();
+                ExitCode::SUCCESS
+            }
+            Some(("disable", _)) => {
+                daemon_commands::run_disable();
+                ExitCode::SUCCESS
+            }
+            _ => {
+                eprintln!("unknown daemon subcommand");
+                ExitCode::FAILURE
+            }
         }
     } else if let Some(status) = matches.subcommand_matches("status") {
         let session = status.get_one::<String>("session").map(|s| s.as_str());
         query_commands::run_status(session);
+        ExitCode::SUCCESS
     } else if let Some(list) = matches.subcommand_matches("list") {
         let json = list.get_flag("json");
         query_commands::run_list(json);
+        ExitCode::SUCCESS
     } else if let Some(logs) = matches.subcommand_matches("logs") {
         let tail = logs.get_flag("tail");
         let level = logs.get_one::<String>("level").map(|s| s.as_str());
         query_commands::run_logs(tail, level);
+        ExitCode::SUCCESS
     } else if let Some(dr) = matches.subcommand_matches("doctor") {
         let fix = dr.get_flag("fix");
         doctor::run_doctor(fix);
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::SUCCESS
     }
 }
 

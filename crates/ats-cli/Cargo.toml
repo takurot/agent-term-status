@@ -18,6 +18,8 @@ ats-daemon = { path = "../ats-daemon" }
 ats-config = { path = "../ats-config" }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
+libc = { workspace = true }
+dirs = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

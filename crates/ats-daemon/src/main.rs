@@ -1,12 +1,15 @@
-//! `ats-daemon` binary entry point (I-13).
+//! `ats-daemon` binary entry point (I-13, I-14).
 //!
 //! Startup sequence: resolve paths → acquire PID file (stale detection)
-//! → bind socket (`0600`) → serve until SIGTERM/SIGINT → graceful drain
-//! → unlink socket and PID file.
+//! → bind socket (`0600`) → start broker → serve until SIGTERM/SIGINT
+//! → graceful drain → unlink socket and PID file.
 
 use std::process::ExitCode;
 
-use ats_daemon::{DaemonPaths, PidFile, ServerConfig, SocketServer};
+use ats_config::theme::Theme;
+use ats_daemon::{Broker, BrokerConfig, DaemonPaths, PidFile, ServerConfig, SocketServer};
+use ats_rendering::{EngineConfig, RenderingEngine};
+use ats_state_engine::StateEngine;
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::{mpsc, watch};
 
@@ -30,13 +33,11 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let _pid_guard = PidFile::acquire(&paths.pid_path)?;
     let server = SocketServer::bind(&paths.socket_path, ServerConfig::default())?;
 
-    let (event_tx, mut event_rx) = mpsc::channel::<Vec<u8>>(EVENT_CHANNEL_CAPACITY);
-    // Placeholder consumer until the broker lands (I-14): drain and drop.
-    let broker = tokio::spawn(async move { while event_rx.recv().await.is_some() {} });
+    let (event_tx, event_rx) = mpsc::channel::<Vec<u8>>(EVENT_CHANNEL_CAPACITY);
+    let (shutdown_tx, shutdown_rx_server) = watch::channel(false);
+    let shutdown_rx_broker = shutdown_tx.subscribe();
 
-    let (shutdown_tx, shutdown_rx) = watch::channel(false);
-    // Install handlers before serving: a daemon that cannot register
-    // them must fail startup rather than run unkillable-by-signal.
+    // Signal handlers installed before serving.
     let mut sigterm = signal(SignalKind::terminate())?;
     let mut sigint = signal(SignalKind::interrupt())?;
     tokio::spawn(async move {
@@ -47,7 +48,20 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         let _ = shutdown_tx.send(true);
     });
 
-    server.run(event_tx, shutdown_rx).await;
-    broker.await?;
+    let theme = Theme::load_bundled("default")
+        .unwrap_or_else(|_| Theme::load_bundled("color-safe").expect("bundled theme missing"));
+    let rendering_engine = RenderingEngine::new(Some(theme), EngineConfig::default());
+
+    let mut broker = Broker::new(
+        StateEngine::new(),
+        Some(rendering_engine),
+        BrokerConfig::default(),
+    );
+    let broker_handle = tokio::spawn(async move {
+        broker.run(event_rx, shutdown_rx_broker).await;
+    });
+
+    server.run(event_tx, shutdown_rx_server).await;
+    broker_handle.await?;
     Ok(())
 }

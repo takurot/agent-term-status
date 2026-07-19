@@ -171,10 +171,16 @@ impl TmuxRenderer {
 
     fn run_tmux(args: &[&str], pane: &str) -> Result<(), RendererError> {
         let mut cmd = Command::new("tmux");
-        for a in args {
-            cmd.arg(a);
+        // Insert -t <pane> after the subcommand for correct arg order with set-option.
+        if let Some((first, rest)) = args.split_first() {
+            cmd.arg(first);
+            cmd.arg("-t").arg(pane);
+            for a in rest {
+                cmd.arg(a);
+            }
+        } else {
+            cmd.arg("-t").arg(pane);
         }
-        cmd.arg("-t").arg(pane);
         let out = cmd
             .output()
             .map_err(|e| RendererError::Failed(format!("cannot run tmux: {e}")))?;

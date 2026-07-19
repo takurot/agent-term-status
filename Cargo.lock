@@ -99,9 +99,16 @@ dependencies = [
 name = "ats-cli"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
+ "ats-config",
  "ats-core",
+ "ats-daemon",
+ "ats-renderer",
+ "ats-renderer-tmux",
  "clap",
+ "dirs",
  "serde_json",
+ "tokio",
 ]
 
 [[package]]

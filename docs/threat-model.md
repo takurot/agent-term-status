@@ -31,9 +31,9 @@ The tool has two main execution contexts:
 - The agent spawns the `ats` binary and pipes JSON on stdin (`ats ingest`)
   or passes state as CLI args (`ats event`).
 - **Threat**: Malformed JSON, oversized payloads, JSON bombs.
-- **Defense**: `ats-core` validates all input against JSON Schema (SPEC §6.2).
-  Oversized payloads (>64 KiB) are rejected before parsing. All hooks return
-  exit code 0 (fail-open, SPEC §15).
+- **Defense**: `ats-core` validates all input via serde typed deserialization at the daemon boundary (`serde_json::from_slice` in `buffer_event`); a JSON Schema test suite (`crates/ats-core/tests/schema_validation.rs`) provides independent verification against `schemas/event-v1.schema.json`.
+    Oversized payloads (>64 KiB) are rejected before parsing. All hooks
+    return exit code 0 (fail-open, SPEC §15).
 
 ### Boundary 2: Hook CLI → Daemon
 - The CLI connects to the daemon over a Unix Domain Socket at
@@ -55,7 +55,7 @@ The tool has two main execution contexts:
 
 | # | Threat | Severity | Defense | Issue |
 |---|--------|----------|---------|-------|
-| T1 | JSON bomb via stdin (ingest) | High | 64 KiB frame cap, schema validation | I-07, I-13 |
+| T1 | JSON bomb via stdin (ingest) | High | 64 KiB frame cap, serde deserialization | I-07, I-13 |
 | T2 | Invalid tmux pane ID injected in `TMUX_PANE` | High | Regex validation (`%[0-9]+`) | I-09 |
 | T3 | Shell injection via activity label in border format | High | Forbidden char filter (`validate_arg`) | I-09 |
 | T4 | Unauthorized UDS client (other local user) | High | Socket mode `0600`, parent dir `0700` | I-13 |
@@ -64,9 +64,9 @@ The tool has two main execution contexts:
 | T7 | Prompt body / file contents in events | High | NOT collected by default (privacy invariant) | I-07 |
 | T8 | API keys / secrets in command strings | Critical | NOT collected by default; RISK classifier only tags command class | I-07 |
 | T9 | Daemon memory exhaustion (event flood) | Medium | Channel bounded to 1024 events, backpressure on socket reads | I-13, I-14 |
-| T10 | Stale render residue after daemon restart | Low | Daemon re-renders from authoritative state on startup; standalone mode is one-shot | I-26 |
+| T10 | Stale render residue after daemon restart | Low | Daemon does NOT re-render on restart (fresh broker starts empty, waits for next event); standalone mode is one-shot | I-14, I-26 |
 | T11 | Control characters in OSC sequences | Medium | Sanitizer strips C0, C1, DEL, surrogate chars | I-10 |
-| T12 | OSC sequence injection via theme fields | Medium | Theme file is local-config-only (`0600`); `ats doctor` validates themes | I-06, I-21 |
+| T12 | OSC sequence injection via theme fields | Medium | `ats doctor` validates bundled themes (compiled-in, no file permissions concern); external theme files loaded via `load_from_path` do not enforce `0600` | I-06, I-21 |
 
 ## Privacy Invariants (SPEC §14.2)
 

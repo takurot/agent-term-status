@@ -13,4 +13,9 @@ path = "src/main.rs"
 [dependencies]
 clap = { workspace = true }
 ats-core = { path = "../ats-core" }
+ats-config = { path = "../ats-config" }
 serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

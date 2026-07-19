@@ -368,6 +368,7 @@ pub fn run_disable() {
     println!("Daemon autostart disabled.");
 }
 
+#[allow(dead_code)]
 pub fn run_launchd_status() {
     let output = Command::new("launchctl")
         .args(["list", LAUNCHD_LABEL])

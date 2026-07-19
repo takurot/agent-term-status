@@ -7,6 +7,7 @@ mod doctor;
 mod event_prototype;
 mod query_commands;
 mod socket_client;
+mod standalone_render;
 mod theme_commands;
 
 const VERSION: &str = concat!(env!("CARGO_PKG_VERSION"), " (", env!("ATS_BUILD_GIT"), ")");
@@ -28,10 +29,13 @@ fn cli(name: String) -> Command {
         .arg_required_else_help(true)
         .subcommand(
             Command::new("event")
-                .about("Send a manual state event (Phase 0 prototype: tmux border only)")
+                .about("Send a manual state event (standalone render when daemon is down)")
                 .arg(Arg::new("state").required(true).value_name("STATE").help(
                     "Agent state in lowercase: idle|working|attention|risk|result|error|unknown",
                 )),
+        )
+        .subcommand(
+            Command::new("reset").about("Reset terminal pane visuals to default (standalone)"),
         )
         .subcommand(
             Command::new("completions")
@@ -149,14 +153,35 @@ fn cli(name: String) -> Command {
         )
 }
 
-fn main() -> ExitCode {
+#[tokio::main]
+async fn main() -> ExitCode {
     let executable_name = invoked_name();
     let matches = cli(executable_name.clone()).get_matches();
     if let Some(event) = matches.subcommand_matches("event") {
         let state = event
             .get_one::<String>("state")
             .expect("state is a required arg");
-        event_prototype::run(state);
+
+        let socket_path = standalone_render::daemon_socket_path();
+        let daemon_up = standalone_render::daemon_reachable(&socket_path);
+
+        if daemon_up {
+            event_prototype::run(state);
+        } else {
+            let agent_state = event_prototype::parse_state(state);
+            match agent_state {
+                Some(as_) => {
+                    eprintln!("ats: daemon unreachable — rendering in standalone mode");
+                    standalone_render::standalone_render(as_, None).await;
+                }
+                None => {
+                    eprintln!("ats event: unknown state {state:?}, ignoring");
+                }
+            }
+        }
+        ExitCode::SUCCESS
+    } else if matches.subcommand_matches("reset").is_some() {
+        standalone_render::standalone_reset().await;
         ExitCode::SUCCESS
     } else if let Some(completions) = matches.subcommand_matches("completions") {
         let shell = completions

@@ -15,7 +15,7 @@ use std::process::Command;
 use ats_core::AgentState;
 
 /// Parses the lowercase state names accepted by `ats event` (SPEC §5.1.2).
-fn parse_state(raw: &str) -> Option<AgentState> {
+pub fn parse_state(raw: &str) -> Option<AgentState> {
     serde_json::from_value(serde_json::Value::String(raw.to_string())).ok()
 }
 

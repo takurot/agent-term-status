@@ -56,7 +56,7 @@ jobs:
 
       - name: Create universal binaries
         run: |
-          mkdir -p release/universal
+          mkdir -p release/aarch64 release/x86_64 release/universal
           for arch in aarch64 x86_64; do
             tar xzf artifacts/agent-term-status-${arch}-apple-darwin.tar.gz -C release/${arch}/
           done
